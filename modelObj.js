@@ -116,11 +116,18 @@ Model.prototype.setParameters = function(elapsed) {
 Model.prototype.move = function(x,y) {
     // faire bouger votre vaisseau ici
     // --> modifier currentTransform pour ca
-    this.modelMatrix = mat4.translate(this.modelMatrix, [-x,0,-y]);
+    if( (y===1&& this.getBBox()[0][0]<1)
+     || (y===-1 && this.getBBox()[1][0]>-1) 
+     || (x === 1 && this.getBBox()[0][1]<1) 
+     || (x === -1 && this.getBBox()[1][1]>-1))
+    {
+        this.modelMatrix = mat4.translate(this.modelMatrix, [-x,0,-y]);
+    }
     if( (this.rotation<Math.PI/6 && y > 0) || this.rotation>-Math.PI/6 && y < 0){
         this.rotation += y*this.rotationFactor;
-        this.viewMatrix = mat4.rotate(this.viewMatrix,(this.rotationFactor),[y*-1,0,0]);
+        //this.viewMatrix = mat4.rotate(this.viewMatrix,(this.rotationFactor),[y*-1,0,0]);
     }
+
 }
 
 Model.prototype.setPosition = function(x,y) {

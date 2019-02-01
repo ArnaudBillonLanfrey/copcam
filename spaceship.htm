@@ -282,8 +282,8 @@
 
 	  if (currentlyPressedKeys[32]) { // SPACE
 	      // just to test how a aplat works 
-	      shootSample.setPosition(0,0);
-          }
+          shootSample.setPosition(spaceship.getBBox()[1][0] + ((spaceship.getBBox()[0][0] - spaceship.getBBox()[1][0] )/2),spaceship.getBBox()[0][1]);
+        }
 	  
       }
 
