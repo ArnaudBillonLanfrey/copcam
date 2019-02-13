@@ -1,4 +1,6 @@
-<html><head>
+<html>
+
+<head>
     <title>SpaceShip</title>
     <meta http-equiv="content-type" content="text/html; charset=windows-1252">
 
@@ -148,22 +150,36 @@
       void main(void) {
           // projection de la position
           gl_Position = uProjMatrix * uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);
-          vNormal = mat3(inverse(transpose(uViewMatrix * uModelMatrix)))*normalize(aVertexNormal);
+          vNormal = mat3(inverse(transpose(uViewMatrix * uModelMatrix)))*normalize(aVertexNormal); // équivaut à norme(V * M * p[x,y,z]) 
       }
     </script>
 
     <script id="model-fs" type="x-shader/x-fragment">#version 300 es
       // *** le fragment shader ***
       precision mediump float; // precision des nombres flottant
-      
+    
+    uniform vec3 uLight;
     in vec3 vNormal;
       out vec4 outColor;
 
       void main(void) {
-          // la couleur est attribuee au fragment courant
-	  vec3 n = normalize(vNormal);
-	  
-          outColor = vec4(n,1.);
+        // Shading
+	    vec3 n = normalize(vNormal);
+        vec3 l = normalize(uLight);
+        // Reflect
+        vec3 r = reflect(l,n);
+        vec3 v = vec3(0.0, 0.0,-1.0);
+
+        vec3 Kd = vec3(1.0,.65,.2); // color shading
+        vec3 Ks = vec3(1.0,1.0,1.0); // color reflect
+
+        float q = 10.0; // shineyness
+        float diff = max(dot(l,n),0.0); //dot = produit scalaire 
+        float spec = pow(max(dot(r,v),0.0),q);
+        
+        vec3 finalColor = Kd*diff + Ks*spec;
+        // la couleur est attribuee au fragment courant
+        outColor = vec4(finalColor,1.);
       }
     </script>
 
@@ -198,169 +214,184 @@
     </script>
 
     <script type="text/javascript">
-      var fbo;
-      var heightfield;
-      var background;
-      var spaceship;
-      var shootSample;
-      
-      function drawScene() {
-	  // initialisation du viewport
-	  gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-	  
-	  // efface les buffers de couleur et de profondeur
-	  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        var fbo;
+        var heightfield;
+        var background;
+        var spaceship;
+        var shootSamples;
 
-	  // A DECOMMENTER POUR TRAVAILLER SUR LE FOND 
-	  // // creation des hauteurs dans une texture
-	  // gl.bindFramebuffer(gl.FRAMEBUFFER,fbo.id());
-	  
-	  // gl.useProgram(heightfield.shader());
-	  // heightfield.sendUniformVariables();
-	  // heightfield.draw();
-	  
-	  // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-	  
-	  // gl.useProgram(background.shader());
-	  // background.sendUniformVariables();
-	  // background.draw();
-	  
-	  gl.useProgram(spaceship.shader());
-	  spaceship.sendUniformVariables();
-	  spaceship.draw();
+        function drawScene() {
+            // initialisation du viewport
+            gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 
-	  // test pour afficher un splat quand on appuie sur espace 
-	  // activation de la transparence 
-	  gl.enable(gl.BLEND); 
-	  gl.useProgram(shootSample.shader());
-	  shootSample.sendUniformVariables();
-	  shootSample.draw();
-	  // on desactive la transparence 
-	  gl.disable(gl.BLEND);
-      }
+            // efface les buffers de couleur et de profondeur
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-      // une bonne maniere de gerer les evenements claviers
-      var currentlyPressedKeys = {};
+            // A DECOMMENTER POUR TRAVAILLER SUR LE FOND 
+            // // creation des hauteurs dans une texture
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.id());
 
-      function handleKeyDown(event) {
-          currentlyPressedKeys[event.keyCode] = true;
-      }
+            gl.useProgram(heightfield.shader());
+            heightfield.sendUniformVariables();
+            heightfield.draw();
 
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-      function handleKeyUp(event) {
-          currentlyPressedKeys[event.keyCode] = false;
-      }
+            gl.useProgram(background.shader());
+            background.sendUniformVariables();
+            background.draw();
 
-      function handleKeys() {
-          if (currentlyPressedKeys[33]) {
-              // Page Up (par exemple)
-              // faire quelque chose... 
-          }
+            gl.useProgram(spaceship.shader());
+            spaceship.sendUniformVariables();
+            spaceship.draw();
+            shootSamples = shootSamples.filter(s => s.loaded);
+            // test pour afficher un splat quand on appuie sur espace 
+            shootSamples.forEach(s => {
+                // activation de la transparence 
+                gl.enable(gl.BLEND);
+                gl.useProgram(s.shader());
+                s.sendUniformVariables();
+                s.draw();
+                // on desactive la transparence 
+                gl.disable(gl.BLEND);
+            });
+        }
 
-	  // vous pouvez utiliser ce genre de fonction
-	  // pour faire bouger votre vaisseau 
-	  if (currentlyPressedKeys[68]) { // D
-              spaceship.move(0,1);
-          }
+        // une bonne maniere de gerer les evenements claviers
+        var currentlyPressedKeys = {};
 
-	  if (currentlyPressedKeys[81]) { // Q
-              spaceship.move(0,-1);
-          }
-
-	  if (currentlyPressedKeys[90]) { // Z
-              spaceship.move(1,0);
-          }
-
-	  if (currentlyPressedKeys[83]) { // S
-              spaceship.move(-1,0);
-          }
-
-	  if (currentlyPressedKeys[77]) { // M
-	      // just a test to clear a splat 
-              shootSample.clear();
-          }
-
-	  if (currentlyPressedKeys[32]) { // SPACE
-	      // just to test how a aplat works 
-	      shootSample.setPosition(0,0);
-          }
-	  
-      }
-
-      function mouseMove(event) {
-	  // recup evenement souris 
-          //var newx = 2.0*(event.clientX/gl.viewportWidth)-1.0;
-          //var newy = -(2.0*(event.clientY/gl.viewportHeight)-1.0);
-      }
+        function handleKeyDown(event) {
+            currentlyPressedKeys[event.keyCode] = true;
+        }
 
 
-      // animation 
-      var lastTime = 0;
-      function animate() {
-          var timeNow = new Date().getTime();
-          if (lastTime != 0) {
-              // anime chacun des objets de la scene
-	      // si necessaire (en fonction du temps ecoul�)
-              var elapsed = timeNow - lastTime;
-              heightfield.setParameters(elapsed);
-              spaceship.setParameters(elapsed);
-              background.setParameters(elapsed);
-	      shootSample.setParameters(elapsed);
+        function handleKeyUp(event) {
+            currentlyPressedKeys[event.keyCode] = false;
+        }
 
-          }
-          lastTime = timeNow;
-      }
+        function handleKeys() {
+            if (currentlyPressedKeys[33]) {
+                // Page Up (par exemple)
+                // faire quelque chose... 
+            }
 
-      function tick() {
-          requestAnimFrame(tick);
-          handleKeys();
-          drawScene();
-          animate();
-      }
+            // vous pouvez utiliser ce genre de fonction
+            // pour faire bouger votre vaisseau 
+            if (currentlyPressedKeys[68]) { // D
+                spaceship.move(0, 1);
+            }
+
+            if (currentlyPressedKeys[81]) { // Q
+                spaceship.move(0, -1);
+            }
+
+            if (currentlyPressedKeys[90]) { // Z
+                spaceship.move(1, 0);
+            }
+
+            if (currentlyPressedKeys[83]) { // S
+                spaceship.move(-1, 0);
+            }
+
+            if (currentlyPressedKeys[77]) { // M
+                // just a test to clear a splat 
+                //shootSample.clear();
+            }
+
+            if (currentlyPressedKeys[32]) { // SPACE
+                // just to test how a aplat works
+                if(spaceship.canShoot) {
+                    let s = new Splat(0);
+                    s.setPosition(spaceship.getBBox()[1][0] + ((spaceship.getBBox()[0][0] - spaceship.getBBox()[1][0]) / 2), spaceship.getBBox()[0][1]);
+                    shootSamples.push(s);
+                    spaceship.canShoot = false;
+                    console.log(shootSamples.length);
+                    setTimeout(() => {
+                        spaceship.canShoot = true;
+                    }, spaceship.delayShoot);
+                } 
+            }
+
+        }
+
+        function mouseMove(event) {
+            // recup evenement souris 
+            //var newx = 2.0*(event.clientX/gl.viewportWidth)-1.0;
+            //var newy = -(2.0*(event.clientY/gl.viewportHeight)-1.0);
+        }
 
 
-      function webGLStart() {
-          // initialisation du canvas et des objets OpenGL
-          var canvas = document.getElementById("SpaceShip");
-          initGL(canvas);
+        // animation 
+        var lastTime = 0;
+        function animate() {
+            var timeNow = new Date().getTime();
+            if (lastTime != 0) {
+                // anime chacun des objets de la scene
+                // si necessaire (en fonction du temps ecoul�)
+                var elapsed = timeNow - lastTime;
+                heightfield.setParameters(elapsed);
+                spaceship.setParameters(elapsed);
+                background.setParameters(elapsed);
+                shootSamples.forEach(s => {
+                    s.setParameters(elapsed);
+                });
 
-          fbo = new FBO(canvas.width,canvas.height,1,false);
+            }
+            lastTime = timeNow;
+        }
 
-          initHeightfieldShader();
-          initBackgroundShader();
-          initModelShader();
-	  initSplatShader();
-	  
-          heightfield = new Heightfield();
-          background = new Background(fbo.texture(0));
-          spaceship = new Model('models/plane.obj');
-	  shootSample = new Splat(0);
-	  
-          // la couleur de fond sera noire
-          gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        function tick() {
+            requestAnimFrame(tick);
+            handleKeys();
+            drawScene();
+            animate();
+        }
 
-          // active le teste de profondeur 
-          gl.enable(gl.DEPTH_TEST);
-          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-          /* Mouse and keyboard interaction functions */
-          //canvas.addEventListener('mousedown', tbMouseDown, true);
-          //canvas.addEventListener('mousemove', mouseMove, true);
-          //canvas.addEventListener('mouseup', tbMouseUp, true);    
-          document.onkeydown = handleKeyDown;
-          document.onkeyup = handleKeyUp;
+        function webGLStart() {
+            // initialisation du canvas et des objets OpenGL
+            var canvas = document.getElementById("SpaceShip");
+            initGL(canvas);
 
-          // dessine la scene
-          tick();
-      }
+            fbo = new FBO(canvas.width, canvas.height, 1, false);
+
+            initHeightfieldShader();
+            initBackgroundShader();
+            initModelShader();
+            initSplatShader();
+
+            heightfield = new Heightfield();
+            background = new Background(fbo.texture(0));
+            spaceship = new Model('models/plane.obj');
+            shootSamples = [];
+
+            // la couleur de fond sera noire
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+            // active le teste de profondeur 
+            gl.enable(gl.DEPTH_TEST);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+            /* Mouse and keyboard interaction functions */
+            //canvas.addEventListener('mousedown', tbMouseDown, true);
+            //canvas.addEventListener('mousemove', mouseMove, true);
+            //canvas.addEventListener('mouseup', tbMouseUp, true);    
+            document.onkeydown = handleKeyDown;
+            document.onkeyup = handleKeyUp;
+
+            // dessine la scene
+            tick();
+        }
 
 
     </script>
 
 
-  </head>
+</head>
 
 
-  <body onload="webGLStart();">
+<body onload="webGLStart();">
     <canvas id="SpaceShip" style="border: none;" width="800" height="800"></canvas>
-</body></html>
+</body>
+
+</html>
