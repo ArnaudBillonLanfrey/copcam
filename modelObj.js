@@ -10,6 +10,7 @@ function initModelShader() {
     modelShader.modelMatrixUniform = gl.getUniformLocation(modelShader, "uModelMatrix");
     modelShader.viewMatrixUniform = gl.getUniformLocation(modelShader, "uViewMatrix");
     modelShader.projMatrixUniform = gl.getUniformLocation(modelShader, "uProjMatrix");
+    modelShader.lightUniform = gl.getUniformLocation(modelShader, "uLight");
 
     console.log("model shader initialized");
 }
@@ -106,6 +107,10 @@ Model.prototype.initParameters = function() {
     this.modelMatrix = mat4.scale(this.modelMatrix, [0.1,0.1,0.1]);
     this.viewMatrix = mat4.lookAt( [0,5,0],[0,0,0],[-1,0,0]);
     this.projMatrix = mat4.perspective(45, 1, 0.1,30);    
+
+    this.delayShoot = 500;
+    this.canShoot = true;
+    this.test = 0;
     // trouver les model/view/proj matrices pour voir l'objet comme vous le souhaitez
 }
 
@@ -149,8 +154,10 @@ Model.prototype.sendUniformVariables = function() {
 	// envoie des matrices aux GPU
 	gl.uniformMatrix4fv(modelShader.modelMatrixUniform,false,m);
 	gl.uniformMatrix4fv(modelShader.viewMatrixUniform,false,this.viewMatrix);
-	gl.uniformMatrix4fv(modelShader.projMatrixUniform,false,this.projMatrix);
+    gl.uniformMatrix4fv(modelShader.projMatrixUniform,false,this.projMatrix);
+    gl.uniform3f(modelShader.lightUniform, Math.sin(this.test), 0., 1.);
 
+    this.test+=.01;
 	// calcul de la boite englobante (projetée)
 	mat4.multiplyVec4(m,[this.bbmin[0],this.bbmin[1],this.bbmin[2],1],this.bbminP);
 	mat4.multiplyVec4(m,[this.bbmax[0],this.bbmax[1],this.bbmax[2],1],this.bbmaxP);
