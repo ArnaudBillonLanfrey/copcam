@@ -105,7 +105,9 @@ Model.prototype.initParameters = function() {
 
     this.modelMatrix = mat4.scale(this.modelMatrix, [0.1,0.1,0.1]);
     this.viewMatrix = mat4.lookAt( [0,5,0],[0,0,0],[-1,0,0]);
-    this.projMatrix = mat4.perspective(45, 1, 0.1,30);    
+    this.projMatrix = mat4.perspective(45, 1, 0.1,30);
+    this.position2D = [0,0];
+    this.speedFactor = 0.2;
     // trouver les model/view/proj matrices pour voir l'objet comme vous le souhaitez
 }
 
@@ -116,11 +118,13 @@ Model.prototype.setParameters = function(elapsed) {
 Model.prototype.move = function(x,y) {
     // faire bouger votre vaisseau ici
     // --> modifier currentTransform pour ca
-    this.modelMatrix = mat4.translate(this.modelMatrix, [-x,0,-y]);
-    if( (this.rotation<Math.PI/6 && y > 0) || this.rotation>-Math.PI/6 && y < 0){
-        this.rotation += y*this.rotationFactor;
-        this.viewMatrix = mat4.rotate(this.viewMatrix,(this.rotationFactor),[y*-1,0,0]);
-    }
+    if( (this.rotation<Math.PI/5 && y > 0) || this.rotation>-Math.PI/5 && y < 0){
+         //this.rotation += y*this.rotationFactor;
+         this.currentTransform = mat4.rotate(this.modelMatrix,(this.rotationFactor),[y*-1,0,0]);
+     }
+    this.position2D = [this.position2D[0] - x * this.speedFactor, this.position2D[1] - y * this.speedFactor];
+    this.currentTransform = mat4.translate(mat4.identity(), [this.position2D[0],0,this.position2D[1]]);
+
 }
 
 Model.prototype.setPosition = function(x,y) {
