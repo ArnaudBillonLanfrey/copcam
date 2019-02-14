@@ -109,7 +109,7 @@ Model.prototype.initParameters = function() {
 
     this.projMatrix = mat4.perspective(45, 1, 0.1,30);
     this.position2D = [0,0];
-    this.speedFactor = 0.2;  
+    this.speedFactor = 0.035;  
 
     this.delayShoot = 500;
     this.canShoot = true;
@@ -131,7 +131,7 @@ Model.prototype.move = function(x,y) {
      || (x === -1 && this.getBBox()[1][1]>-1))
     {
             if( (this.rotation<Math.PI/6 && y > 0) || this.rotation>-Math.PI/6 && y < 0){
-		         //this.rotation += y*this.rotationFactor;
+		         this.rotation += y*this.rotationFactor;
 		         this.currentTransform = mat4.rotate(this.modelMatrix,(this.rotationFactor),[y*-1,0,0]);
 		     }
 		    this.position2D = [this.position2D[0] - x * this.speedFactor, this.position2D[1] - y * this.speedFactor];
@@ -225,7 +225,7 @@ Model.prototype.load = function(filename) {
 		var arrayNormal = [];
  
 		for ( var i = 0 ; i < lines.length ; i++ ) {
-		    var parts = lines[i].trimRight().split(' ');
+		    var parts = lines[i].trimRight().split(' ').filter( (p) => p!=="");
 		    if ( parts.length > 0 ) {
 			switch(parts[0]) {
 			case 'v':  positions.push(
