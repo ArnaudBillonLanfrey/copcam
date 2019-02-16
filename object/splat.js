@@ -10,7 +10,7 @@ function initSplatShader() {
     splatShader.positionUniform = gl.getUniformLocation(splatShader, "uPosition");
     splatShader.texUniform = gl.getUniformLocation(splatShader, "uTex");
 
-    console.log("splat shader initialized");
+    //console.log("splat shader initialized");
 }
 
 function Splat(splatTexture) {
@@ -69,7 +69,7 @@ function Splat(splatTexture) {
 
     this.loaded = true;
     
-    console.log("splat initialized");
+    //console.log("splat initialized");
 }
 
 Splat.prototype.shader = function() {
@@ -77,8 +77,8 @@ Splat.prototype.shader = function() {
 }
 
 Splat.prototype.initParameters = function() {
-    this.width = 0.2;
-    this.height = 0.2;
+    this.width = 0.5;
+    this.height = 0.5;
     this.position = [0.0,-0.7];
 
     //this.tex = initTexture("spaceship.png");
@@ -102,9 +102,9 @@ Splat.prototype.sendUniformVariables = function() {
 	gl.uniform2fv(splatShader.positionUniform,this.position);
 
 	// // how to send a texture: 
-	// gl.activeTexture(gl.TEXTURE0);
-	// gl.bindTexture(gl.TEXTURE_2D,this.splatTexture);
-	// gl.uniform1i(splatShader.texUniform, 0);
+	 gl.activeTexture(gl.TEXTURE0);
+	 gl.bindTexture(gl.TEXTURE_2D,this.splatTexture);
+	 gl.uniform1i(splatShader.texUniform, 0);
     }
 }
 

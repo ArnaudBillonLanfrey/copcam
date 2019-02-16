@@ -15,7 +15,7 @@ function initModelShader() {
     console.log("model shader initialized");
 }
 
-function Model(filename) {
+function Model(objData) {
     this.vertexBuffer = gl.createBuffer();
     this.vertexBuffer.itemSize = 0;
     this.vertexBuffer.numItems = 0;
@@ -30,8 +30,8 @@ function Model(filename) {
     this.bbminP = [0,0,0,0];
     this.bbmaxP = [0,0,0,0];
     this.loaded = false;
-    
-    this.load(filename);
+
+    this.handleLoadedObject(objData);
 }
 
 Model.prototype.computeBoundingBox = function(vertices) {
@@ -59,11 +59,11 @@ Model.prototype.handleLoadedObject = function(objData) {
     var vertices = objData[0];
     var normals = objData[1];
 
-    console.log("Nb vertices: " + vertices.length/3);
+    /*console.log("Nb vertices: " + vertices.length/3);*/
     
     this.computeBoundingBox(vertices);
-    console.log("BBox min: "+this.bbmin[0]+","+this.bbmin[1]+","+this.bbmin[2]);
-    console.log("BBox max: "+this.bbmax[0]+","+this.bbmax[1]+","+this.bbmax[2]);
+    /*console.log("BBox min: "+this.bbmin[0]+","+this.bbmin[1]+","+this.bbmin[2]);
+    console.log("BBox max: "+this.bbmax[0]+","+this.bbmax[1]+","+this.bbmax[2]);*/
 
     this.initParameters();
 
@@ -97,8 +97,6 @@ Model.prototype.handleLoadedObject = function(objData) {
 
 
 Model.prototype.initParameters = function() {
-    this.rotation = 0;
-    this.rotationFactor = Math.PI/40;
     this.currentTransform = mat4.identity();
     this.modelMatrix = mat4.identity(); //positionne l'obj
     this.viewMatrix = mat4.identity(); //positionne la vue
@@ -109,10 +107,7 @@ Model.prototype.initParameters = function() {
 
     this.projMatrix = mat4.perspective(45, 1, 0.1,30);
     this.position2D = [0,0];
-    this.speedFactor = 0.035;  
-
-    this.delayShoot = 500;
-    this.canShoot = true;
+    
     this.test = 0;
     // trouver les model/view/proj matrices pour voir l'objet comme vous le souhaitez
 }
@@ -125,7 +120,7 @@ Model.prototype.move = function(x,y) {
     // faire bouger votre vaisseau ici
     // --> modifier currentTransform pour ca
     //On garde la position d'origine de l'avion et on mémorise les changements pour tous les appliquer à la fois
-    if( (y===1&& this.getBBox()[0][0]<1)
+    /*if( (y===1&& this.getBBox()[0][0]<1)
      || (y===-1 && this.getBBox()[1][0]>-1) 
      || (x === 1 && this.getBBox()[0][1]<1) 
      || (x === -1 && this.getBBox()[1][1]>-1))
@@ -136,7 +131,7 @@ Model.prototype.move = function(x,y) {
 		     }
 		    this.position2D = [this.position2D[0] - x * this.speedFactor, this.position2D[1] - y * this.speedFactor];
 		    this.currentTransform = mat4.translate(mat4.identity(), [this.position2D[0],0,this.position2D[1]]);
-    }
+    }*/
 }
 
 Model.prototype.setPosition = function(x,y) {
@@ -196,6 +191,10 @@ Model.prototype.draw = function() {
     }
 }
 
+Model.prototype.rotateY = function(angle) {
+    this.currentTransform = mat4.rotateY(this.modelMatrix,angle);
+}
+
 Model.prototype.clear = function() {
     // clear all GPU memory
     gl.deleteBuffer(this.vertexBuffer);
@@ -204,75 +203,4 @@ Model.prototype.clear = function() {
     this.loaded = false;
 }
 
-Model.prototype.load = function(filename) {
-    var vertices = null;
-    var xmlhttp = new XMLHttpRequest();
-    var instance = this;
-    
-    xmlhttp.onreadystatechange = function() {
-	
-        if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-	    
-            if (xmlhttp.status == 200) {
-		
-                var data = xmlhttp.responseText;
-		
-                var lines = data.split("\n");
-		
-		var positions = [];
-		var normals = [];
-		var arrayVertex = []
-		var arrayNormal = [];
- 
-		for ( var i = 0 ; i < lines.length ; i++ ) {
-		    var parts = lines[i].trimRight().split(' ').filter( (p) => p!=="");
-		    if ( parts.length > 0 ) {
-			switch(parts[0]) {
-			case 'v':  positions.push(
-			    vec3.create([
-				parseFloat(parts[1]),
-				parseFloat(parts[2]),
-				parseFloat(parts[3])]
-			    ));
-			    break;
-			case 'vn':
-			    normals.push(
-				vec3.create([
-				    parseFloat(parts[1]),
-				    parseFloat(parts[2]),
-				    parseFloat(parts[3])]
-				));
-			    break;
-			case 'f': {
-			    var f1 = parts[1].split('/');
-			    var f2 = parts[2].split('/');
-			    var f3 = parts[3].split('/');
-			    Array.prototype.push.apply(arrayVertex,positions[parseInt(f1[0])-1]);
-			    Array.prototype.push.apply(arrayVertex,positions[parseInt(f2[0])-1]);
-			    Array.prototype.push.apply(arrayVertex,positions[parseInt(f3[0])-1]);
-			    
-			    Array.prototype.push.apply(arrayNormal,normals[parseInt(f1[2])-1]);
-			    Array.prototype.push.apply(arrayNormal,normals[parseInt(f2[2])-1]);
-			    Array.prototype.push.apply(arrayNormal,normals[parseInt(f3[2])-1]);
-			    break;
-			}
-			default: break;
-			}
-		    }
-		}
 
-		var objData = [
-		    new Float32Array(arrayVertex),
-		    new Float32Array(arrayNormal)
-		]
-		instance.handleLoadedObject(objData);
-		
-            }
-        }
-    };
-    
-    console.log("Loading Model <" + filename + ">...");
-    
-    xmlhttp.open("GET", filename, true);
-    xmlhttp.send();
-}

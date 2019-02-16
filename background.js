@@ -82,7 +82,7 @@ Background.prototype.setParameters = function(elapsed) {
 Background.prototype.sendUniformVariables = function() {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D,this.heightfieldTexture);
-    gl.uniform1i(backgroundShader.heightfieldUniform, 0);
+    gl.uniform1i(backgroundShader.heightfieldUniform, 0); //envoie donnée du CPU au GPU
 }
 
 Background.prototype.draw = function() {
