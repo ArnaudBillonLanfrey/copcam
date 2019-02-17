@@ -9,8 +9,19 @@
     <script type="text/javascript" src="fbo.js"></script>
     <script type="text/javascript" src="heightfield.js"></script>
     <script type="text/javascript" src="background.js"></script>
-    <script type="text/javascript" src="modelObj.js"></script>
-    <script type="text/javascript" src="splat.js"></script>
+
+    <script type="text/javascript" src="models/modelObj.js"></script>
+    <script type="text/javascript" src="models/splat.js"></script>
+    <script type="text/javascript" src="models/plane.js"></script>
+
+    <script type="text/javascript" src="entity/baseEntity.js"></script>
+    <script type="text/javascript" src="entity/enemy_1.js"></script>
+    <script type="text/javascript" src="entity/player.js"></script>
+
+
+
+    <script type="text/javascript" src="gameManager-utils.js"></script>
+
 
     <script id="heightfield-vs" type="x-shader/x-vertex">#version 300 es
       // *** le vertex shader *** 
@@ -102,38 +113,38 @@
     </script>
 
     <script id="background-fs" type="x-shader/x-fragment">#version 300 es
-      // *** le fragment shader ***
-      precision highp float; // precision des nombres flottant
+        // *** le fragment shader ***
+        precision highp float; // precision des nombres flottant
 
-      uniform sampler2D uHeightfield; // la texture de hauteurs
-    in vec2 vTextureCoord; // recuperation de la coord rasterisee
-      out vec4 outColor;
+        uniform vec3 uLight;
+        uniform sampler2D uHeightfield; // la texture de hauteurs
+        in vec2 vTextureCoord; // recuperation de la coord rasterisee
+        out vec4 outColor;
 
-      vec3 computeNormal() {
-	  const float scale = 20.0;
+        vec3 computeNormal() {
+            const float scale = 20.0;
 
-	  vec2 ps = 1.0/vec2(textureSize(uHeightfield,0));
-	  float xp = texture(uHeightfield,vTextureCoord+vec2( ps.x,0.0)).x;
-	  float xm = texture(uHeightfield,vTextureCoord+vec2(-ps.x,0.0)).x;
-	  float yp = texture(uHeightfield,vTextureCoord+vec2(0.0, ps.y)).x;
-	  float ym = texture(uHeightfield,vTextureCoord+vec2(0.0,-ps.y)).x;
+            vec2 ps = 1.0/vec2(textureSize(uHeightfield,0));
+            float xp = texture(uHeightfield,vTextureCoord+vec2( ps.x,0.0)).x;
+            float xm = texture(uHeightfield,vTextureCoord+vec2(-ps.x,0.0)).x;
+            float yp = texture(uHeightfield,vTextureCoord+vec2(0.0, ps.y)).x;
+            float ym = texture(uHeightfield,vTextureCoord+vec2(0.0,-ps.y)).x;
 
-	  float gx = 0.5*(xp-xm)*scale;
-	  float gy = 0.5*(yp-ym)*scale;
+            float gx = 0.5*(xp-xm)*scale;
+            float gy = 0.5*(yp-ym)*scale;
 
-	  vec3 v1 = normalize(vec3(1.0,0.0,gx));  
-	  vec3 v2 = normalize(vec3(0.0,1.0,gy));
+            vec3 v1 = normalize(vec3(1.0,0.0,gx));  
+            vec3 v2 = normalize(vec3(0.0,1.0,gy));
 
-	  return cross(v1,v2);
-      }
+            return cross(v1,v2);
+        }
 
-      void main(void) {
-	  float d = texture(uHeightfield,vTextureCoord).x;
-	  vec3 n = computeNormal();
-	  
-	  outColor = vec4(n,1.0);
+        void main(void) {
+            float d = texture(uHeightfield,vTextureCoord).x;
+            vec3 n = normalize(computeNormal());
+            outColor = vec4(n,1.0);
 
-      }
+        }
     </script>
 
     <script id="model-vs" type="x-shader/x-vertex">#version 300 es
@@ -173,7 +184,7 @@
         vec3 Kd = vec3(1.0,.65,.2); // color shading
         vec3 Ks = vec3(1.0,1.0,1.0); // color reflect
 
-        float q = 10.0; // shineyness
+        float q = 15.0; // shineyness
         float diff = max(dot(l,n),0.0); //dot = produit scalaire 
         float spec = pow(max(dot(r,v),0.0),q);
         
@@ -204,12 +215,14 @@
       // *** le fragment shader ***
       precision highp float; // precision des nombres flottant
       
-    in vec2 vTextureCoord; // recuperation de la coord rasterisee
+        uniform sampler2D uTex;
+      in vec2 vTextureCoord; // recuperation de la coord rasterisee
       out vec4 outColor;
       
       void main(void) {
-	  float alpha = 1.-smoothstep(0.2,0.25,distance(vec2(.5),vTextureCoord));
-	  outColor = vec4(alpha*vec3(1,0,0),alpha);
+          outColor = texture(uTex, vTextureCoord);
+	  //float alpha = 1.-smoothstep(0.2,0.25,distance(vec2(.5),vTextureCoord));
+	  //outColor = vec4(alpha*vec3(1,0,0),alpha);
       }
     </script>
 
@@ -217,8 +230,19 @@
         var fbo;
         var heightfield;
         var background;
-        var spaceship;
+        var player;
         var shootSamples;
+        var splatTex;
+        var width
+        var height;
+        var delayBetweenRepeatKey = 150;
+        var canPressKey = true;
+        var enemies;
+
+        var lightning = 0;
+
+        var entities = [];
+        var modelsData = {};
 
         function drawScene() {
             // initialisation du viewport
@@ -241,10 +265,12 @@
             background.sendUniformVariables();
             background.draw();
 
-            gl.useProgram(spaceship.shader());
-            spaceship.sendUniformVariables();
-            spaceship.draw();
-            shootSamples = shootSamples.filter(s => s.loaded);
+            if(player) {
+                gl.useProgram(player.model.shader);
+                player.model.sendUniformVariables();
+                player.model.draw();
+            }
+
             // test pour afficher un splat quand on appuie sur espace 
             shootSamples.forEach(s => {
                 // activation de la transparence 
@@ -255,13 +281,18 @@
                 // on desactive la transparence 
                 gl.disable(gl.BLEND);
             });
+            enemies.forEach( e => {
+                gl.useProgram(e.model.shader);
+                e.model.sendUniformVariables();
+                e.model.draw();
+            })
         }
 
         // une bonne maniere de gerer les evenements claviers
         var currentlyPressedKeys = {};
 
         function handleKeyDown(event) {
-            currentlyPressedKeys[event.keyCode] = true;
+                currentlyPressedKeys[event.keyCode] = true;
         }
 
 
@@ -278,37 +309,49 @@
             // vous pouvez utiliser ce genre de fonction
             // pour faire bouger votre vaisseau 
             if (currentlyPressedKeys[68]) { // D
-                spaceship.move(0, 1);
+                player.move(0, 1);
             }
 
             if (currentlyPressedKeys[81]) { // Q
-                spaceship.move(0, -1);
+                player.move(0, -1);
             }
 
             if (currentlyPressedKeys[90]) { // Z
-                spaceship.move(1, 0);
+                player.move(1, 0);
             }
 
             if (currentlyPressedKeys[83]) { // S
-                spaceship.move(-1, 0);
+                player.move(-1, 0);
             }
 
             if (currentlyPressedKeys[77]) { // M
-                // just a test to clear a splat 
-                //shootSample.clear();
+                if(canPressKey) {
+                    newEnemy = new Enemy_1(new Model(modelsData.plane))
+                    enemies.push(newEnemy);
+                    entities.push(newEnemy);
+
+                    let indx = enemies.length-1;
+                    setTimeout(() => {
+                        enemies[indx].destroy();
+                    }, 1000);
+                    canPressKey = false;
+                    setTimeout(() => {
+                        canPressKey = true;
+                    }, delayBetweenRepeatKey);
+                }
+
             }
 
             if (currentlyPressedKeys[32]) { // SPACE
-                // just to test how a aplat works
-                if(spaceship.canShoot) {
-                    let s = new Splat(0);
-                    s.setPosition(spaceship.getBBox()[1][0] + ((spaceship.getBBox()[0][0] - spaceship.getBBox()[1][0]) / 2), spaceship.getBBox()[0][1]);
+                if(player.canShoot) {
+                    let s = new Splat(splatTex);
+                    s.setPosition(player.model.getBBox()[1][0] + ((player.model.getBBox()[0][0] - player.model.getBBox()[1][0]) / 2), player.model.getBBox()[0][1]);
                     shootSamples.push(s);
-                    spaceship.canShoot = false;
-                    console.log(shootSamples.length);
+                    player.canShoot = false;
+                    //console.log(shootSamples.length);
                     setTimeout(() => {
-                        spaceship.canShoot = true;
-                    }, spaceship.delayShoot);
+                        player.canShoot = true;
+                    }, player.delayShoot);
                 } 
             }
 
@@ -330,7 +373,9 @@
                 // si necessaire (en fonction du temps ecoul�)
                 var elapsed = timeNow - lastTime;
                 heightfield.setParameters(elapsed);
-                spaceship.setParameters(elapsed);
+                if(player) {
+                    player.model.setParameters(elapsed);
+                }
                 background.setParameters(elapsed);
                 shootSamples.forEach(s => {
                     s.setParameters(elapsed);
@@ -340,9 +385,23 @@
             lastTime = timeNow;
         }
 
+        function gameManager() {
+            shootSamples = shootSamples.filter(s => s.loaded);
+            entities = entities.filter(e => e.model.loaded);
+            entities.forEach( (e) => {
+                e.model.setLightValue(lightning);
+            })
+            enemies.forEach( e => {
+                e.move(-1,0);
+            });
+
+            lightning += 0.01;
+        }
+
         function tick() {
             requestAnimFrame(tick);
             handleKeys();
+            gameManager();
             drawScene();
             animate();
         }
@@ -351,19 +410,30 @@
         function webGLStart() {
             // initialisation du canvas et des objets OpenGL
             var canvas = document.getElementById("SpaceShip");
+            canvas.width = window.innerHeight*.95;
+            canvas.height = window.innerHeight*.95;
+            width = canvas.width;
+            height = canvas.height;
             initGL(canvas);
 
             fbo = new FBO(canvas.width, canvas.height, 1, false);
 
             initHeightfieldShader();
             initBackgroundShader();
-            initModelShader();
             initSplatShader();
+            loadModel('obj/plane.obj').then( (objData) => {
+
+                modelsData.plane = objData;
+                player = new Player(new Plane(objData));
+                entities.push(player);
+            })
+            splatTex = initTexture('textures/airplane.png');
 
             heightfield = new Heightfield();
             background = new Background(fbo.texture(0));
-            spaceship = new Model('models/plane.obj');
+
             shootSamples = [];
+            enemies = [];
 
             // la couleur de fond sera noire
             gl.clearColor(0.0, 0.0, 0.0, 1.0);
