@@ -10,11 +10,14 @@
     <script type="text/javascript" src="heightfield.js"></script>
     <script type="text/javascript" src="background.js"></script>
 
-    <script type="text/javascript" src="object/modelObj.js"></script>
-    <script type="text/javascript" src="object/splat.js"></script>
-    <script type="text/javascript" src="object/base.js"></script>
-    <script type="text/javascript" src="object/plane.js"></script>
-    <script type="text/javascript" src="object/enemy_1.js"></script>
+    <script type="text/javascript" src="models/modelObj.js"></script>
+    <script type="text/javascript" src="models/splat.js"></script>
+    <script type="text/javascript" src="models/plane.js"></script>
+
+    <script type="text/javascript" src="entity/baseEntity.js"></script>
+    <script type="text/javascript" src="entity/enemy_1.js"></script>
+    <script type="text/javascript" src="entity/player.js"></script>
+
 
 
     <script type="text/javascript" src="gameManager-utils.js"></script>
@@ -181,7 +184,7 @@
         vec3 Kd = vec3(1.0,.65,.2); // color shading
         vec3 Ks = vec3(1.0,1.0,1.0); // color reflect
 
-        float q = 10.0; // shineyness
+        float q = 15.0; // shineyness
         float diff = max(dot(l,n),0.0); //dot = produit scalaire 
         float spec = pow(max(dot(r,v),0.0),q);
         
@@ -227,16 +230,18 @@
         var fbo;
         var heightfield;
         var background;
-        var spaceship;
+        var player;
         var shootSamples;
         var splatTex;
-        var spaceshipModel;
         var width
         var height;
         var delayBetweenRepeatKey = 150;
         var canPressKey = true;
         var enemies;
 
+        var lightning = 0;
+
+        var entities = [];
         var modelsData = {};
 
         function drawScene() {
@@ -260,13 +265,12 @@
             background.sendUniformVariables();
             background.draw();
 
-            if(spaceship) {
-                gl.useProgram(spaceship.model.shader());
-                spaceship.model.sendUniformVariables();
-                spaceship.model.draw();
+            if(player) {
+                gl.useProgram(player.model.shader);
+                player.model.sendUniformVariables();
+                player.model.draw();
             }
 
-            shootSamples = shootSamples.filter(s => s.loaded);
             // test pour afficher un splat quand on appuie sur espace 
             shootSamples.forEach(s => {
                 // activation de la transparence 
@@ -278,7 +282,7 @@
                 gl.disable(gl.BLEND);
             });
             enemies.forEach( e => {
-                gl.useProgram(e.model.shader());
+                gl.useProgram(e.model.shader);
                 e.model.sendUniformVariables();
                 e.model.draw();
             })
@@ -305,24 +309,27 @@
             // vous pouvez utiliser ce genre de fonction
             // pour faire bouger votre vaisseau 
             if (currentlyPressedKeys[68]) { // D
-                spaceship.move(0, 1);
+                player.move(0, 1);
             }
 
             if (currentlyPressedKeys[81]) { // Q
-                spaceship.move(0, -1);
+                player.move(0, -1);
             }
 
             if (currentlyPressedKeys[90]) { // Z
-                spaceship.move(1, 0);
+                player.move(1, 0);
             }
 
             if (currentlyPressedKeys[83]) { // S
-                spaceship.move(-1, 0);
+                player.move(-1, 0);
             }
 
             if (currentlyPressedKeys[77]) { // M
                 if(canPressKey) {
-                    enemies.push(new Enemy_1(new Model(modelsData.plane)));
+                    newEnemy = new Enemy_1(new Model(modelsData.plane))
+                    enemies.push(newEnemy);
+                    entities.push(newEnemy);
+
                     let indx = enemies.length-1;
                     setTimeout(() => {
                         enemies[indx].destroy();
@@ -336,15 +343,15 @@
             }
 
             if (currentlyPressedKeys[32]) { // SPACE
-                if(spaceship.canShoot) {
+                if(player.canShoot) {
                     let s = new Splat(splatTex);
-                    s.setPosition(spaceship.model.getBBox()[1][0] + ((spaceship.model.getBBox()[0][0] - spaceship.model.getBBox()[1][0]) / 2), spaceship.model.getBBox()[0][1]);
+                    s.setPosition(player.model.getBBox()[1][0] + ((player.model.getBBox()[0][0] - player.model.getBBox()[1][0]) / 2), player.model.getBBox()[0][1]);
                     shootSamples.push(s);
-                    spaceship.canShoot = false;
+                    player.canShoot = false;
                     //console.log(shootSamples.length);
                     setTimeout(() => {
-                        spaceship.canShoot = true;
-                    }, spaceship.delayShoot);
+                        player.canShoot = true;
+                    }, player.delayShoot);
                 } 
             }
 
@@ -366,8 +373,8 @@
                 // si necessaire (en fonction du temps ecoul�)
                 var elapsed = timeNow - lastTime;
                 heightfield.setParameters(elapsed);
-                if(spaceship) {
-                    spaceship.model.setParameters(elapsed);
+                if(player) {
+                    player.model.setParameters(elapsed);
                 }
                 background.setParameters(elapsed);
                 shootSamples.forEach(s => {
@@ -379,9 +386,16 @@
         }
 
         function gameManager() {
+            shootSamples = shootSamples.filter(s => s.loaded);
+            entities = entities.filter(e => e.model.loaded);
+            entities.forEach( (e) => {
+                e.model.setLightValue(lightning);
+            })
             enemies.forEach( e => {
                 e.move(-1,0);
-            })
+            });
+
+            lightning += 0.01;
         }
 
         function tick() {
@@ -406,14 +420,12 @@
 
             initHeightfieldShader();
             initBackgroundShader();
-            initModelShader();
             initSplatShader();
-            loadModel('models/plane.obj').then( (objData) => {
+            loadModel('obj/plane.obj').then( (objData) => {
 
                 modelsData.plane = objData;
-
-                spaceshipModel = new Model(objData);
-                spaceship = new Plane(spaceshipModel);
+                player = new Player(new Plane(objData));
+                entities.push(player);
             })
             splatTex = initTexture('textures/airplane.png');
 

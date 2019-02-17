@@ -22,10 +22,10 @@ function Splat(splatTexture) {
 
     // un tableau contenant les positions des sommets (sur CPU donc)
     var vertices = [
-	-wo2,-ho2, -0.8,
-	wo2,-ho2, -0.8,
-	wo2, ho2, -0.8,
-	-wo2, ho2, -0.8
+	-wo2,-ho2, 0.989,
+	wo2,-ho2, 0.989,
+	wo2, ho2, 0.989,
+	-wo2, ho2, 0.989
     ];
     
     var coords = [

@@ -1,7 +1,7 @@
-class Enemy_1 extends Plane {
+class Enemy_1 extends BaseEntity {
     constructor(model) {
         super(model);
-        this.speedFactor = 0.02
+        this.model.speedFactor = 0.02
 
         this.model.rotateY(Math.PI);
         this.model.position2D = [this.model.position2D[0] - 2, this.model.position2D[1]];
