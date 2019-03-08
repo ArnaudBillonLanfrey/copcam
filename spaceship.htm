@@ -416,6 +416,9 @@
                 shootSamples.forEach(s => {
                     s.setParameters(elapsed);
                 });
+                entities.forEach( e => {
+                    e.setParameters(elapsed);
+                });
 
             }
             lastTime = timeNow;
@@ -423,16 +426,15 @@
 
         function spawnEnemies() {
             if(!id_spawnE) {
-            var timeout_random = Math.random()*1000 * 5;
+            var timeout_random = Math.random()*1000 * 8;
             var num_enemies = Math.random() + 1 * 5;
                 id_spawnE = setTimeout(() => {
                     for(var i=0;i<num_enemies;i++) {
-                        var newEnemy = new Enemy_1(new Model(modelsData.plane))
+                        var newEnemy = new Enemy_1(new Plane(modelsData.plane.data, modelsData.plane.bufferOpt))
                         enemies.push(newEnemy);
                         entities.push(newEnemy);
                     }
                     id_spawnE = null;
-                    console.log(id_spawnE);
                 }, timeout_random);
             }
 
@@ -445,7 +447,7 @@
             
             /* Manage objects */
             shootSamples = shootSamples.filter(s => s.loaded);
-            entities = entities.filter(e => e.model.loaded);
+            entities = entities.filter(e => e.isLoaded());
             entities.forEach( (e) => {
                 e.model.setLightValue(lightning);
             })
@@ -480,9 +482,15 @@
             initBackgroundShader();
             initSplatShader();
             loadModel('obj/plane.obj').then( (objData) => {
-
-                modelsData.plane = objData;
-                player = new Player(new Plane(objData));
+                var planeObj = new Plane(objData);
+                modelsData = { 
+                    plane : {
+                        data: objData, 
+                        bufferOpt: {vertexBuffer: planeObj.vertexBuffer, normalBuffer: planeObj.normalBuffer}
+                    }
+                }
+                console.log(modelsData.plane);
+                player = new Player( new Plane(modelsData.plane.data, modelsData.plane.bufferOpt));
                 entities.push(player);
             })
             splatTex = initTexture('textures/airplane.png');

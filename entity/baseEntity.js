@@ -15,4 +15,11 @@ class BaseEntity {
     destroy() {
         this.model.clear();
     }
+
+    isLoaded() {
+        return this.model.loaded;
+    }
+    setParameters(elapsed) {
+        this.model.setParameters(elapsed);
+    }
 }

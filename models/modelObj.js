@@ -1,13 +1,19 @@
 class Model {
 
-    constructor(objData) {
-        this.vertexBuffer = gl.createBuffer();
-        this.vertexBuffer.itemSize = 0;
-        this.vertexBuffer.numItems = 0;
-        
-        this.normalBuffer = gl.createBuffer();
-        this.normalBuffer.itemSize = 0;
-        this.normalBuffer.numItems = 0;
+    constructor(objData, bufferOpts = null) {   
+        if(!bufferOpts) {
+            this.vertexBuffer = gl.createBuffer();
+            this.vertexBuffer.itemSize = 0;
+            this.vertexBuffer.numItems = 0;
+            
+            this.normalBuffer = gl.createBuffer();
+            this.normalBuffer.itemSize = 0;
+            this.normalBuffer.numItems = 0;
+        } else {
+            this.vertexBuffer = bufferOpts.vertexBuffer;
+            this.normalBuffer = bufferOpts.normalBuffer;
+        }
+
         
         this.bbmin = [0,0,0];
         this.bbmax = [0,0,0];
