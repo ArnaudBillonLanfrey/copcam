@@ -115,7 +115,6 @@ class Model {
     }
 
     setParameters(elapsed) {
-        // on pourrait animer des choses ici
     }
 
     move(x,y) {
