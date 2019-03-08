@@ -34,7 +34,7 @@ class Model {
         this.shader.projMatrixUniform = gl.getUniformLocation(this.shader, "uProjMatrix");
         this.shader.lightUniform = gl.getUniformLocation(this.shader, "uLight");
 
-        console.log("model shader initialized");
+        //console.log("model shader initialized");
     }
 
     computeBoundingBox(vertices) {
@@ -94,7 +94,7 @@ class Model {
         
         gl.bindVertexArray(null); // stop le binding
     
-        console.log("model initialized");
+        //console.log("model initialized");
         this.loaded = true;
     }
 
