@@ -1,6 +1,13 @@
 class Model {
 
-    constructor(objData, bufferOpts = null) {   
+    constructor(objData, bufferOpts = null) {       
+        this.bbmin = [0,0,0];
+        this.bbmax = [0,0,0];
+        
+        this.bbminP = [0,0,0,0];
+        this.bbmaxP = [0,0,0,0];
+        this.loaded = false;
+    
         if(!bufferOpts) {
             this.vertexBuffer = gl.createBuffer();
             this.vertexBuffer.itemSize = 0;
@@ -9,20 +16,17 @@ class Model {
             this.normalBuffer = gl.createBuffer();
             this.normalBuffer.itemSize = 0;
             this.normalBuffer.numItems = 0;
+            this.handleLoadedObject(objData);
+
         } else {
             this.vertexBuffer = bufferOpts.vertexBuffer;
             this.normalBuffer = bufferOpts.normalBuffer;
+            this.vao = bufferOpts.vao;
+            this.computeBoundingBox(objData[0]);
+            this.initParameters();
+            this.loaded = true;
+            
         }
-
-        
-        this.bbmin = [0,0,0];
-        this.bbmax = [0,0,0];
-        
-        this.bbminP = [0,0,0,0];
-        this.bbmaxP = [0,0,0,0];
-        this.loaded = false;
-    
-        this.handleLoadedObject(objData);
         this.initShader();
         this.shader;
 
@@ -62,6 +66,48 @@ class Model {
             }
         }
         }
+    }
+
+    isCollidingWith2D(pos2D,width,height) {
+        // [1] ==  1 > bot
+        //     == -1 > top
+        // [0] == -1 > left
+        //     ==  1 > right
+        var bbox = this.getBBox();
+        if((pos2D[0] >= bbox[1][0])      // trop à droite
+
+        || (pos2D[0] + width <= bbox[0][0]) // trop à gauche
+
+        || (pos2D[1] >= bbox[1][1]) // trop en bas
+
+        || (pos2D[1] + height <= bbox[0][1]))  // trop en haut
+
+            return false; 
+
+        else
+
+            return true; 
+    }
+
+    isCollidingWithBB(obj_bbox) {
+        // [1] ==  1 > bot
+        //     == -1 > top
+        // [0] == -1 > left
+        //     ==  1 > right
+        var bbox = this.getBBox();
+        if((obj_bbox[1][0] >= bbox[1][0])      // trop à droite
+
+        || (obj_bbox[0][0] <= bbox[1][0]) // trop à gauche
+
+        || (obj_bbox[1][1] >= bbox[0][1]) // trop en bas
+
+        || (obj_bbox[0][1] <= bbox[1][1]))  // trop en haut
+
+            return false; 
+
+        else
+
+            return true; 
     }
 
     handleLoadedObject(objData) {
@@ -118,6 +164,9 @@ class Model {
 
         this.lightValue = 0;
         // trouver les model/view/proj matrices pour voir l'objet comme vous le souhaitez
+    }
+    modifyScale(scale) {
+        this.modelMatrix = mat4.scale(this.modelMatrix, scale);
     }
 
     setParameters(elapsed) {

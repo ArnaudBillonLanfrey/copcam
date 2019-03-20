@@ -2,7 +2,7 @@ class Enemy_1 extends BaseEntity {
     constructor(model) {
         super(model);
         this.model.speedFactor = 0.02;
-
+        this.model.modifyScale([0.5,0.5,0.5]);
         this.model.rotateY(Math.PI);
         this.model.position2D = [
             this.model.position2D[0] - 2,
@@ -24,8 +24,9 @@ class Enemy_1 extends BaseEntity {
             this.model.getBBox()[0][1] > 1 ||
             this.model.getBBox()[1][1] < -1
         ) {
-            console.log("dead");
-            this.destroy();
+            this.model.loaded = false;
         }
     }
+
+
 }

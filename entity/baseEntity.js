@@ -2,6 +2,7 @@ class BaseEntity {
     constructor(model) {
         this.model = model;
         this.model.speedFactor = 0.1;  
+        this.hp = 100;
     }
 
     move(x,y) {
@@ -14,6 +15,7 @@ class BaseEntity {
 
     destroy() {
         this.model.clear();
+        this.hp = 0;
     }
 
     isLoaded() {
@@ -21,5 +23,17 @@ class BaseEntity {
     }
     setParameters(elapsed) {
         this.model.setParameters(elapsed);
+    }
+
+    takeDamage(amount) {
+        this.hp -= amount;
+    }
+
+    isDead() {
+        return this.hp<=0
+    }
+
+    isAlive() {
+        return !this.isDead();
     }
 }
