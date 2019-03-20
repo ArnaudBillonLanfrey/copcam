@@ -266,6 +266,9 @@
         var delayBetweenRepeatKey = 150;
         var canPressKey = true;
         var enemies;
+        var enemyLevel;
+        var shotLevel;
+        var pause = false;
 
         var lightning = 0;
 
@@ -441,7 +444,7 @@
         function gameManager() {
             
             
-            spawnEnemies();
+           //spawnEnemies();
             
             /* Manage objects */
             shootSamples = shootSamples.filter(s => s.loaded);
@@ -457,11 +460,13 @@
         }
 
         function tick() {
-            requestAnimFrame(tick);
-            handleKeys();
-            gameManager();
-            drawScene();
-            animate();
+            if (!pause) {
+                requestAnimFrame(tick);
+                handleKeys();
+                gameManager();
+                drawScene();
+                animate();
+            }
         }
 
 
@@ -511,15 +516,103 @@
             tick();
         }
 
+        function getUserValues() {
+            var radiosEnemy = document.getElementsByName('enemy');
+            for(var i = 0; i < radiosEnemy.length; i++){
+                if(radiosEnemy[i].checked){
+                    enemyLevel = radiosEnemy[i].value;
+                }
+            }
 
+            var radiosShot = document.getElementsByName('shot');
+            for(var i = 0; i < radiosShot.length; i++){
+                if(radiosShot[i].checked){
+                    shotLevel = radiosShot[i].value;
+                }
+            }
+        }
+        function startGame() {
+            getUserValues();
+            var startButton = document.getElementById('startButton');
+            var pauseButton = document.getElementById('pauseButton');
+            var restartButton = document.getElementById('restartButton');
+            startButton.style.display ="none";
+            pauseButton.style.display = "visible";
+            restartButton.style.display = "visible";
+
+            document.getElementById('playButton').blur();
+            document.getElementById('pauseButton').blur();
+            document.getElementById('restartButton').blur();
+            document.getElementById('SpaceShip').focus();
+            webGLStart();
+        }
+
+        function restartGame() {
+            var r = confirm("Are you sure you want to restart game?");
+            document.getElementById('restartButton').blur();
+            document.getElementById('SpaceShip').focus();
+            if (r == true) {
+                getUserValues();
+                webGLStart();
+            }
+        }
+
+        function pauseGame() {
+            if (!pause) {
+                document.getElementById('pauseButton').value = "Resume";
+            }else {
+                document.getElementById('pauseButton').value = "Pause";
+            }
+            document.getElementById('pauseButton').blur();
+            document.getElementById('SpaceShip').focus();
+            pause = !pause;
+            tick();
+        }
     </script>
 
-
+    <link rel="stylesheet" href="./style/css/global.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 </head>
 
 
-<body onload="webGLStart();">
-    <canvas id="SpaceShip" style="border: none;" width="800" height="800"></canvas>
+<body onload="">
+    <canvas id="SpaceShip" style="border: none; float: left;" width="800" height="800"></canvas>
+    <div style="float: left; width: 25%">
+        <fieldset>
+            <legend>Menu</legend>
+            <p>Select enemys level :</p>
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                <label class="btn btn-outline-success active">
+                    <input type="radio" id="easyEnemy" name="enemy" value="1"  checked> Easy
+                </label>
+                <label class="btn btn-outline-warning">
+                    <input type="radio" id="mediumEnemy" name="enemy" value="2"> Medium
+                </label>
+                <label class="btn btn-outline-danger">
+                    <input type="radio" id="hardEnemy" name="enemy" value="3"> Hard
+                </label>
+            </div>
+            <p>Select shots level :</p>
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                <label class="btn btn-outline-success active">
+                    <input type="radio" id="easyShot" name="shot" value="1"  checked> Easy
+                </label>
+                <label class="btn btn-outline-warning">
+                    <input type="radio" id="mediumShot" name="shot" value="2"> Medium
+                </label>
+                <label class="btn btn-outline-danger">
+                    <input type="radio" id="hardShot" name="shot" value="3"> Hard
+                </label>
+            </div>
+            <hr>
+            <input class="btn btn-secondary" type="button" value="Play" id="startButton" onclick="startGame()"/>
+            <input class="btn btn-secondary" type="button" value="Pause" id="pauseButton" onclick="pauseGame()"/>
+            <input class="btn btn-secondary" type="button" value="Restart" id="restartButton" onclick="restartGame()"/>
+        </fieldset>
+    </div>
 </body>
 
 </html>
