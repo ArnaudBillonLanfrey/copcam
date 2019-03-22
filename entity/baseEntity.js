@@ -39,4 +39,11 @@ class BaseEntity {
     getHP() {
         return this.hp;
     }
+
+    isLoaded() {
+        return this.model.loaded;
+    }
+    setParameters(elapsed) {
+        this.model.setParameters(elapsed);
+    }
 }
