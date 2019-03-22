@@ -276,6 +276,83 @@
         var modelsData = {};
         var id_spawnE;
 
+        // une bonne maniere de gerer les evenements claviers
+        var currentlyPressedKeys = {};
+
+        function handleKeyDown(event) {
+                currentlyPressedKeys[event.keyCode] = true;
+        }
+
+
+        function handleKeyUp(event) {
+            currentlyPressedKeys[event.keyCode] = false;
+        }
+
+        function handleKeys() {
+            if (currentlyPressedKeys[33]) {
+                // Page Up (par exemple)
+                // faire quelque chose... 
+            }
+
+            // vous pouvez utiliser ce genre de fonction
+            // pour faire bouger votre vaisseau 
+            if (currentlyPressedKeys[68]) { // D
+                player.move(0, 1);
+                player.setRotating(true);
+            }
+
+            if (currentlyPressedKeys[81]) { // Q
+                player.move(0, -1);
+                player.setRotating(true);
+            }
+
+            if (currentlyPressedKeys[90]) { // Z
+                player.move(1, 0);
+            }
+
+            if (currentlyPressedKeys[83]) { // S
+                player.move(-1, 0);
+            }
+
+            if (currentlyPressedKeys[77]) { // M
+                if(canPressKey) {
+                    newEnemy =  new Enemy_1(new Plane(modelsData.plane.data, modelsData.plane.bufferOpt));
+                    enemies.push(newEnemy);
+                    entities.push(newEnemy);
+                    canPressKey = false;
+                    setTimeout(() => {
+                        canPressKey = true;
+                    }, delayBetweenRepeatKey);
+                }
+
+            }
+
+            if (currentlyPressedKeys[32]) { // SPACE
+                if(player.canShoot) {
+                    let s = new Splat(splatTex);
+                    s.setPosition(player.model.getBBox()[1][0] + ((player.model.getBBox()[0][0] - player.model.getBBox()[1][0]) / 2), player.model.getBBox()[0][1]);
+                    shootSamples.push(s);
+                    player.canShoot = false;
+                    //console.log(shootSamples.length);
+                    setTimeout(() => {
+                        player.canShoot = true;
+                    }, player.delayShoot);
+                } 
+            }
+
+            if(!currentlyPressedKeys[68] && !currentlyPressedKeys[81]) {
+              if(player)
+                player.setRotating(false);
+            }
+
+        }
+
+        function mouseMove(event) {
+            // recup evenement souris 
+            //var newx = 2.0*(event.clientX/gl.viewportWidth)-1.0;
+            //var newy = -(2.0*(event.clientY/gl.viewportHeight)-1.0);
+        }
+
         function drawScene() {
             // initialisation du viewport
             gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -320,89 +397,6 @@
             })
         }
 
-        // une bonne maniere de gerer les evenements claviers
-        var currentlyPressedKeys = {};
-
-        function handleKeyDown(event) {
-                currentlyPressedKeys[event.keyCode] = true;
-        }
-
-
-        function handleKeyUp(event) {
-            currentlyPressedKeys[event.keyCode] = false;
-        }
-
-        function handleKeys() {
-            if (currentlyPressedKeys[33]) {
-                // Page Up (par exemple)
-                // faire quelque chose... 
-            }
-
-            // vous pouvez utiliser ce genre de fonction
-            // pour faire bouger votre vaisseau 
-            if (currentlyPressedKeys[68]) { // D
-                player.move(0, 1);
-                player.setRotating(true);
-            }
-
-            if (currentlyPressedKeys[81]) { // Q
-                player.move(0, -1);
-                player.setRotating(true);
-            }
-
-            if (currentlyPressedKeys[90]) { // Z
-                player.move(1, 0);
-            }
-
-            if (currentlyPressedKeys[83]) { // S
-                player.move(-1, 0);
-            }
-
-            if (currentlyPressedKeys[77]) { // M
-                if(canPressKey) {
-                    newEnemy = new Enemy_1(new Model(modelsData.plane))
-                    enemies.push(newEnemy);
-                    entities.push(newEnemy);
-
-                    let indx = enemies.length-1;
-                    setTimeout(() => {
-                        enemies[indx].destroy();
-                    }, 1000);
-                    canPressKey = false;
-                    setTimeout(() => {
-                        canPressKey = true;
-                    }, delayBetweenRepeatKey);
-                }
-
-            }
-
-            if (currentlyPressedKeys[32]) { // SPACE
-                if(player.canShoot) {
-                    let s = new Splat(splatTex);
-                    s.setPosition(player.model.getBBox()[1][0] + ((player.model.getBBox()[0][0] - player.model.getBBox()[1][0]) / 2), player.model.getBBox()[0][1]);
-                    shootSamples.push(s);
-                    player.canShoot = false;
-                    //console.log(shootSamples.length);
-                    setTimeout(() => {
-                        player.canShoot = true;
-                    }, player.delayShoot);
-                } 
-            }
-
-            if(!currentlyPressedKeys[68] && !currentlyPressedKeys[81]) {
-              if(player)
-                player.setRotating(false);
-            }
-
-        }
-
-        function mouseMove(event) {
-            // recup evenement souris 
-            //var newx = 2.0*(event.clientX/gl.viewportWidth)-1.0;
-            //var newy = -(2.0*(event.clientY/gl.viewportHeight)-1.0);
-        }
-
-
         // animation 
         var lastTime = 0;
         function animate() {
@@ -419,6 +413,9 @@
                 shootSamples.forEach(s => {
                     s.setParameters(elapsed);
                 });
+                entities.forEach( e => {
+                    e.setParameters(elapsed);
+                });
 
             }
             lastTime = timeNow;
@@ -426,16 +423,15 @@
 
         function spawnEnemies() {
             if(!id_spawnE) {
-            var timeout_random = Math.random()*1000 * 5;
+            var timeout_random = Math.random()*1000 * 8;
             var num_enemies = Math.random() + 1 * 5;
                 id_spawnE = setTimeout(() => {
                     for(var i=0;i<num_enemies;i++) {
-                        var newEnemy = new Enemy_1(new Model(modelsData.plane))
+                        var newEnemy = new Enemy_1(new Plane(modelsData.plane.data, modelsData.plane.buffer))
                         enemies.push(newEnemy);
                         entities.push(newEnemy);
                     }
                     id_spawnE = null;
-                    console.log(id_spawnE);
                 }, timeout_random);
             }
 
@@ -444,17 +440,37 @@
         function gameManager() {
             
             
-           //spawnEnemies();
+           spawnEnemies();
             
             /* Manage objects */
             shootSamples = shootSamples.filter(s => s.loaded);
-            entities = entities.filter(e => e.model.loaded);
+            entities = entities.filter(e => e.isLoaded());
+            enemies = enemies.filter(e => e.isAlive());
             entities.forEach( (e) => {
                 e.model.setLightValue(lightning);
             })
             enemies.forEach( e => {
                 e.move(-1,0);
+                shootSamples.forEach( s => {
+                    if(e.model.isCollidingWith2D(s.position, s.real_width, s.real_height)) {
+                        /*console.group("Collision")
+                        console.log("--Hit--");
+                        console.log(e);
+                        console.log("--By--");
+                        console.log(s);
+                        console.groupEnd();*/
+                        e.takeDamage(player.getDamage());
+                        s.clear();
+                    }
+                });
+                if(e.model.isCollidingWithBB(player.model.getBBox())) {
+                    console.log("OK");
+                    player.takeDamage(10);
+                    e.takeDamage(100);
+                }
             });
+
+            //console.log(player.model.getBBox());
 
             lightning += 0.01;
         }
@@ -485,9 +501,14 @@
             initBackgroundShader();
             initSplatShader();
             loadModel('obj/plane.obj').then( (objData) => {
-
-                modelsData.plane = objData;
-                player = new Player(new Plane(objData));
+                var planeObj = new Plane(objData);
+                modelsData = { 
+                    plane : {
+                        data: objData, 
+                        bufferOpt: {vertexBuffer: planeObj.vertexBuffer, normalBuffer: planeObj.normalBuffer, vao:planeObj.vao}
+                    }
+                }
+                player = new Player( new Plane(modelsData.plane.data));
                 entities.push(player);
             })
             splatTex = initTexture('textures/airplane.png');
@@ -511,7 +532,9 @@
             //canvas.addEventListener('mouseup', tbMouseUp, true);    
             document.onkeydown = handleKeyDown;
             document.onkeyup = handleKeyUp;
-
+            document.getElementById("life").style.backgroundImage = `linear-gradient(to right, rgb(0, 168, 36) 100%, rgb(214, 55, 55) 0%)`;
+            document.getElementById("life").style.width = "200px";
+            document.getElementById("life").style.height = "20px";
             // dessine la scene
             tick();
         }
@@ -531,6 +554,12 @@
                 }
             }
         }
+        function updateHUD() {
+            if(player) {
+                document.getElementById("life").style.backgroundImage = `linear-gradient(to right, rgb(0, 168, 36) ${player.getHP()}%, rgb(214, 55, 55) ${100-player.getHP()}%)`;
+            }
+        }
+
         function startGame() {
             getUserValues();
             var startButton = document.getElementById('startButton');
@@ -540,7 +569,7 @@
             pauseButton.style.display = "visible";
             restartButton.style.display = "visible";
 
-            document.getElementById('playButton').blur();
+            document.getElementById('startButton').blur();
             document.getElementById('pauseButton').blur();
             document.getElementById('restartButton').blur();
             document.getElementById('SpaceShip').focus();
@@ -583,7 +612,7 @@
     <div style="float: left; width: 25%">
         <fieldset>
             <legend>Menu</legend>
-            <p>Select enemys level :</p>
+            <p>Select enemies level :</p>
             <div class="btn-group btn-group-toggle" data-toggle="buttons">
                 <label class="btn btn-outline-success active">
                     <input type="radio" id="easyEnemy" name="enemy" value="1"  checked> Easy
@@ -611,6 +640,8 @@
             <input class="btn btn-secondary" type="button" value="Play" id="startButton" onclick="startGame()"/>
             <input class="btn btn-secondary" type="button" value="Pause" id="pauseButton" onclick="pauseGame()"/>
             <input class="btn btn-secondary" type="button" value="Restart" id="restartButton" onclick="restartGame()"/>
+            <hr>
+            <div id="life"/>
         </fieldset>
     </div>
 </body>

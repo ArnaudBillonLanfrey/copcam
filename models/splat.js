@@ -16,9 +16,10 @@ function initSplatShader() {
 function Splat(splatTexture) {
     this.splatTexture = splatTexture;
     this.initParameters();
-    
     var wo2 = 0.5*this.width;
     var ho2 = 0.5*this.height;
+    this.real_width = wo2;
+    this.real_height = ho2;
 
     // un tableau contenant les positions des sommets (sur CPU donc)
     var vertices = [
@@ -36,7 +37,6 @@ function Splat(splatTexture) {
     ];
     
     var tri = [0,1,2,0,2,3];
-    
     
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
@@ -66,11 +66,11 @@ function Splat(splatTexture) {
     this.triangles.numItems = 6;
 
     gl.bindVertexArray(null);
-
     this.loaded = true;
     
     //console.log("splat initialized");
 }
+
 
 Splat.prototype.shader = function() {
     return splatShader;
@@ -91,7 +91,7 @@ Splat.prototype.setPosition = function(x,y) {
 
 Splat.prototype.setParameters = function(elapsed) {
     // we could animate something here
-    this.position[1] += 0.1;
+    this.position[1] += 0.05;
     if(this.position[1] > 1) {
         this.clear();
     }
@@ -104,7 +104,7 @@ Splat.prototype.sendUniformVariables = function() {
 	// // how to send a texture: 
 	 gl.activeTexture(gl.TEXTURE0);
 	 gl.bindTexture(gl.TEXTURE_2D,this.splatTexture);
-	 gl.uniform1i(splatShader.texUniform, 0);
+     gl.uniform1i(splatShader.texUniform, 0);
     }
 }
 

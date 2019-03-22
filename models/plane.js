@@ -1,6 +1,6 @@
 class Plane extends Model {
-    constructor(objData) {
-        super(objData);
+    constructor(objData, bufferOpts) {
+        super(objData, bufferOpts);
         this.speedFactor = 0.1;
         this.rotation = 0;
         this.rotationFactor = Math.PI / 40;
