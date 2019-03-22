@@ -36,4 +36,7 @@ class BaseEntity {
     isAlive() {
         return !this.isDead();
     }
+    getHP() {
+        return this.hp;
+    }
 }

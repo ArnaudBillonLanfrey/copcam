@@ -15,5 +15,6 @@ class Player extends BaseEntity {
     getDamage() {
         return this.damage;
     }
+    
 }
 

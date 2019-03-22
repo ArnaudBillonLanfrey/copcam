@@ -532,7 +532,9 @@
             //canvas.addEventListener('mouseup', tbMouseUp, true);    
             document.onkeydown = handleKeyDown;
             document.onkeyup = handleKeyUp;
-
+            document.getElementById("life").style.backgroundImage = `linear-gradient(to right, rgb(0, 168, 36) 100%, rgb(214, 55, 55) 0%)`;
+            document.getElementById("life").style.width = "200px";
+            document.getElementById("life").style.height = "20px";
             // dessine la scene
             tick();
         }
@@ -552,6 +554,12 @@
                 }
             }
         }
+        function updateHUD() {
+            if(player) {
+                document.getElementById("life").style.backgroundImage = `linear-gradient(to right, rgb(0, 168, 36) ${player.getHP()}%, rgb(214, 55, 55) ${100-player.getHP()}%)`;
+            }
+        }
+
         function startGame() {
             getUserValues();
             var startButton = document.getElementById('startButton');
@@ -561,7 +569,7 @@
             pauseButton.style.display = "visible";
             restartButton.style.display = "visible";
 
-            document.getElementById('playButton').blur();
+            document.getElementById('startButton').blur();
             document.getElementById('pauseButton').blur();
             document.getElementById('restartButton').blur();
             document.getElementById('SpaceShip').focus();
@@ -604,7 +612,7 @@
     <div style="float: left; width: 25%">
         <fieldset>
             <legend>Menu</legend>
-            <p>Select enemys level :</p>
+            <p>Select enemies level :</p>
             <div class="btn-group btn-group-toggle" data-toggle="buttons">
                 <label class="btn btn-outline-success active">
                     <input type="radio" id="easyEnemy" name="enemy" value="1"  checked> Easy
@@ -632,6 +640,8 @@
             <input class="btn btn-secondary" type="button" value="Play" id="startButton" onclick="startGame()"/>
             <input class="btn btn-secondary" type="button" value="Pause" id="pauseButton" onclick="pauseGame()"/>
             <input class="btn btn-secondary" type="button" value="Restart" id="restartButton" onclick="restartGame()"/>
+            <hr>
+            <div id="life"/>
         </fieldset>
     </div>
 </body>
