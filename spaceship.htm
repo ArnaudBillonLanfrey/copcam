@@ -14,6 +14,7 @@
     <script type="text/javascript" src="models/splat.js"></script>
     <script type="text/javascript" src="entity/projectiles/machinegun.js"></script>
     <script type="text/javascript" src="models/plane.js"></script>
+    <script type="text/javascript" src="models/explosion.js"></script>
 
     <script type="text/javascript" src="entity/baseEntity.js"></script>
     <script type="text/javascript" src="entity/enemy_1.js"></script>
@@ -261,7 +262,6 @@
         var background;
         var player;
         var shootSamples;
-        var splatTex;
         var width
         var height;
         var delayBetweenRepeatKey = 150;
@@ -276,6 +276,9 @@
         var entities = [];
         var modelsData = {};
         var id_spawnE;
+
+        var textures = {};
+        var currentAnimations = [];
 
         // une bonne maniere de gerer les evenements claviers
         var currentlyPressedKeys = {};
@@ -330,7 +333,7 @@
 
             if (currentlyPressedKeys[32]) { // SPACE
                 if(player.canShoot) {
-                    let bullet = new Machinegun(machineGunText);
+                    let bullet = new Machinegun(textures.machineGunText);
                     bullet.setPosition(player.model.getBBox()[1][0] + ((player.model.getBBox()[0][0] - player.model.getBBox()[1][0]) / 2) - Math.random()*0.1 + Math.random()*0.1, player.model.getBBox()[0][1]);
                     shootSamples.push(bullet);
                     player.canShoot = false;
@@ -395,7 +398,15 @@
                 gl.useProgram(e.model.shader);
                 e.model.sendUniformVariables();
                 e.model.draw();
-            })
+            });
+            currentAnimations.forEach( a => {
+                gl.enable(gl.BLEND);
+                gl.useProgram(a.shader());
+                a.sendUniformVariables();
+                a.draw();
+                gl.disable(gl.BLEND);
+
+            });
         }
 
         // animation 
@@ -416,6 +427,10 @@
                 });
                 entities.forEach( e => {
                     e.setParameters(elapsed);
+                });
+                currentAnimations = currentAnimations.filter( a => !a.isFinished());
+                currentAnimations.forEach( a => {
+                    a.setParameters(elapsed);
                 });
 
             }
@@ -461,6 +476,11 @@
                         console.log(s);
                         console.groupEnd();*/
                         e.takeDamage(player.getDamage());
+                        if(e.isDead()) {
+                            let explo = new Explosion(textures.vfx.explosion);
+                            explo.setPosition(e.model.getBBox()[1][0] + ((e.model.getBBox()[0][0] - e.model.getBBox()[1][0]) / 2), e.model.getBBox()[1][1]);
+                            currentAnimations.push(explo);
+                        }
                         s.clear();
                     }
                 });
@@ -512,8 +532,16 @@
                 player = new Player( new Plane(modelsData.plane.data));
                 entities.push(player);
             })
-            splatTex = initTexture('textures/airplane.png');
-            machineGunText = initTexture('textures/clash2.png');
+            textures.splatTex = initTexture('textures/airplane.png');
+            textures.machineGunText = initTexture('textures/clash2.png');
+            textures.vfx = {};
+            textures.vfx.explosion = [];
+            for(let i=1;i<13;++i) {
+                textures.vfx.explosion.push(initTexture('textures/FX/'+i+'.png'));
+            }
+
+
+
 
             heightfield = new Heightfield();
             background = new Background(fbo.texture(0));
