@@ -21,6 +21,12 @@ class Player extends BaseEntity {
     getProjectile() {
         return this.projectile;
     }
+    setSpeedFactor(speedFactor) {
+        this.model.speedFactor = speedFactor;
+    }
+    getSpeedFacotr() {
+        return this.mode.speedFactor;k
+    }
 
 
     

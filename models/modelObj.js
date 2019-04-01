@@ -74,8 +74,8 @@ class Model {
         //     == -1 > top
         // [0] == -1 > left
         //     ==  1 > right
-        var bbox = this.getBBox();
-        if((pos2D[0] >= bbox[1][0])      // trop à droite
+        //const { minX, maxX, minY, maxY } = this.getBBox();
+       /* if((pos2D[0] >= bbox[1][0])      // trop à droite
 
         || (pos2D[0] + width <= bbox[0][0]) // trop à gauche
 
@@ -90,30 +90,38 @@ class Model {
             console.log("POS2D",pos2D);
             console.log("WIDTH/HEIGHT", [width, height]);
             console.log("BBOX",bbox);*/
-            return true; 
-        }
+            console.log(pos2D);
+            return false; 
+    //}
 
     }
 
     isCollidingWithBB(obj_bbox) {
+        // [0][0] -> HD.x
+        //    [1] -> HD.y
+        // [1][0] -> BG.x
+        // [1][1] -> BG.Y
+        
         // [1] ==  1 > bot
         //     == -1 > top
         // [0] == -1 > left
         //     ==  1 > right
-        var bbox = this.getBBox();
-        if((obj_bbox[1][0] >= bbox[1][0])      // trop à droite
+       /* var bbox = this.getBBox();
+        if((obj_bbox[1][0] >= bbox[0][0])      // trop à droite
 
         || (obj_bbox[0][0] <= bbox[1][0]) // trop à gauche
 
-        || (obj_bbox[1][1] >= bbox[0][1]) // trop en bas
+        || (obj_bbox[1][1] <= bbox[0][1]) // trop en bas
 
-        || (obj_bbox[0][1] <= bbox[1][1]))  // trop en haut
+        || (obj_bbox[0][1] >= bbox[1][1]))  // trop en haut
 
             return false; 
 
-        else
-
+        else {
             return true; 
+        }*/
+
+
     }
 
     handleLoadedObject(objData) {
@@ -166,7 +174,7 @@ class Model {
         this.viewMatrix = mat4.lookAt( [0,5,0],[0,0,0],[-1,0,0]);
     
         this.projMatrix = mat4.perspective(45, 1, 0.1,30);
-        this.position2D = [0,0];
+        this.position2D = {x:0,y:0};
 
         this.lightValue = 0;
         this.color = [217,122,80];
@@ -180,18 +188,24 @@ class Model {
     }
 
     move(x,y) {
-        if( (y===1&& this.getBBox()[0][0]<1)
-        || (y===-1 && this.getBBox()[1][0]>-1) 
-        || (x === 1 && this.getBBox()[0][1]<1) 
-        || (x === -1 && this.getBBox()[1][1]>-1))
-       {
-               this.position2D = [this.position2D[0] - x * this.speedFactor, this.position2D[1] - y * this.speedFactor];
-               this.currentTransform = mat4.translate(mat4.identity(), [this.position2D[0],0,this.position2D[1]]);
+        const { minX, maxX, minY, maxY } = this.getBBox();
+        if ((x === 1 && maxX < 1)
+            || (x === -1 && minX > -1)
+            || (y === 1 && maxY < 1)
+            || (y === -1 && minY > -1)) {
+               this.position2D.x = this.position2D.x + x * this.speedFactor,
+               this.position2D.y = this.position2D.y + y * this.speedFactor
+               this.currentTransform = mat4.translate(mat4.identity(), [-this.position2D.y, 0, -this.position2D.x]);
        }
     }
 
     getBBox() {
-        return [this.bbminP,this.bbmaxP];
+        return {
+            minX: this.bbmaxP[0],
+            maxX: this.bbminP[0],
+            minY: this.bbmaxP[1],
+            maxY: this.bbminP[1]
+        }
     }
 
     sendUniformVariables() {

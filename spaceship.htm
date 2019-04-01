@@ -281,11 +281,14 @@
         var textures = {};
         var currentAnimations = [];
 
+        // ID of the requested animation
+        var ID_request =null;
+
         // une bonne maniere de gerer les evenements claviers
         var currentlyPressedKeys = {};
 
         function handleKeyDown(event) {
-                currentlyPressedKeys[event.keyCode] = true;
+            currentlyPressedKeys[event.keyCode] = true;
         }
 
 
@@ -302,21 +305,21 @@
             // vous pouvez utiliser ce genre de fonction
             // pour faire bouger votre vaisseau 
             if (currentlyPressedKeys[68]) { // D
-                player.move(0, 1);
+                player.move(1, 0);
                 player.setRotating(true);
             }
 
             if (currentlyPressedKeys[81]) { // Q
-                player.move(0, -1);
+                player.move(-1, 0);
                 player.setRotating(true);
             }
 
             if (currentlyPressedKeys[90]) { // Z
-                player.move(1, 0);
+                player.move(0, 1);
             }
 
             if (currentlyPressedKeys[83]) { // S
-                player.move(-1, 0);
+                player.move(0, -1);
             }
 
             if (currentlyPressedKeys[77]) { // M
@@ -335,7 +338,8 @@
             if (currentlyPressedKeys[32]) { // SPACE
                 if(player.canShoot) {
                     let bullet = new Machinegun(textures.machineGunText);
-                    bullet.setPosition(player.model.getBBox()[1][0] + ((player.model.getBBox()[0][0] - player.model.getBBox()[1][0]) / 2) - Math.random()*0.1 + Math.random()*0.1, player.model.getBBox()[0][1]);
+                    const { minX, maxX, minY, maxY } = player.model.getBBox();
+                    bullet.setPosition(minX + ((maxX - minX) / 2) - Math.random()*0.1 + Math.random()*0.1, maxY);
                     shootSamples.push(bullet);
                     player.canShoot = false;
                     //console.log(shootSamples.length);
@@ -440,9 +444,11 @@
 
         function spawnEnemies() {
             if(!id_spawnE) {
-            var timeout_random = Math.random()*1000 * 8;
+            var timeout_random = (Math.random()*1000 * 8)/enemyLevel;
             var num_enemies = Math.random() * 2;
                 id_spawnE = setTimeout(() => {
+                    console.log(enemyLevel);
+                    console.log(timeout_random);
                     for(var i=0;i<num_enemies;i++) {
                         var newEnemy = new Enemy_1(new Plane(modelsData.plane.data, modelsData.plane.bufferOpt))
                         enemies.push(newEnemy);
@@ -457,7 +463,7 @@
         function gameManager() {
             
             
-           spawnEnemies();
+           //spawnEnemies();
             
             /* Manage objects */
             shootSamples = shootSamples.filter(s => s.loaded);
@@ -467,7 +473,7 @@
                 e.model.setLightValue(lightning);
             })
             enemies.forEach( e => {
-                e.move(-1,0);
+                e.move(0,-1);
                 shootSamples.forEach( s => {
                     if(e.model.isCollidingWith2D(s.position, s.width, s.height)) {
                         /*console.group("Collision")
@@ -499,11 +505,13 @@
 
         function tick() {
             if (!pause) {
-                requestAnimFrame(tick);
+                ID_request = requestAnimFrame(tick);
                 handleKeys();
                 gameManager();
                 drawScene();
                 animate();
+            } else {
+                cancelAnimationFrame(ID_request);
             }
         }
 
@@ -523,6 +531,7 @@
             initBackgroundShader();
             initSplatShader();
             loadModel('obj/plane.obj').then( (objData) => {
+                console.log("Plane model loaded");
                 var planeObj = new Plane(objData);
                 modelsData = { 
                     plane : {
@@ -531,6 +540,7 @@
                     }
                 }
                 player = new Player( new Plane(modelsData.plane.data));
+                player.setSpeedFactor(0.05);
                 entities.push(player);
             })
             textures.splatTex = initTexture('textures/airplane.png');
@@ -612,6 +622,7 @@
             document.getElementById('restartButton').blur();
             document.getElementById('SpaceShip').focus();
             if (r == true) {
+                cancelAnimationFrame(ID_request);
                 getUserValues();
                 webGLStart();
             }

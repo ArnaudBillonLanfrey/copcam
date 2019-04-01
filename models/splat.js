@@ -77,7 +77,7 @@ Splat.prototype.shader = function() {
 Splat.prototype.initParameters = function() {
     this.width = 0.25;
     this.height = 0.25;
-    this.position = [0.0,-0.7];
+    this.position = {x:0,y:0};
     this.speed = 0.05;
 
     //this.tex = initTexture("spaceship.png");
@@ -85,20 +85,21 @@ Splat.prototype.initParameters = function() {
 }
 
 Splat.prototype.setPosition = function(x,y) {
-	this.position = [x,y];
+    this.position.x = x;
+    this.position.y = y;
 }
 
 Splat.prototype.setParameters = function(elapsed) {
     // we could animate something here
-    this.position[1] += this.speed;
-    if(this.position[1] > 1) {
+    this.position.y += this.speed;
+    if(this.position.y > 1) {
         this.clear();
     }
 }
 
 Splat.prototype.sendUniformVariables = function() {
     if(this.loaded) {
-	gl.uniform2fv(splatShader.positionUniform,this.position);
+	gl.uniform2fv(splatShader.positionUniform,Object.values(this.position));
 
 	// // how to send a texture: 
 	 gl.activeTexture(gl.TEXTURE0);
