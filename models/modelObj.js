@@ -43,6 +43,7 @@ class Model {
         this.shader.viewMatrixUniform = gl.getUniformLocation(this.shader, "uViewMatrix");
         this.shader.projMatrixUniform = gl.getUniformLocation(this.shader, "uProjMatrix");
         this.shader.lightUniform = gl.getUniformLocation(this.shader, "uLight");
+        this.shader.colorUniform = gl.getUniformLocation(this.shader, "uColor");
 
         //console.log("model shader initialized");
     }
@@ -168,6 +169,7 @@ class Model {
         this.position2D = [0,0];
 
         this.lightValue = 0;
+        this.color = [217,122,80];
         // trouver les model/view/proj matrices pour voir l'objet comme vous le souhaitez
     }
     modifyScale(scale) {
@@ -204,6 +206,7 @@ class Model {
         gl.uniformMatrix4fv(this.shader.viewMatrixUniform,false,this.viewMatrix);
         gl.uniformMatrix4fv(this.shader.projMatrixUniform,false,this.projMatrix);
         gl.uniform3f(this.shader.lightUniform, Math.sin(this.lightValue), 0., 1.);
+        gl.uniform3f(this.shader.colorUniform, ...this.color);
 
         // calcul de la boite englobante (projetée)
         mat4.multiplyVec4(m,[this.bbmin[0],this.bbmin[1],this.bbmin[2],1],this.bbminP);

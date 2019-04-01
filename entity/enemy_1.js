@@ -1,6 +1,7 @@
 class Enemy_1 extends BaseEntity {
     constructor(model) {
         super(model);
+        this.model.color = [255,0,0];
         this.model.speedFactor = 0.005;
         this.model.modifyScale([0.5,0.5,0.5]);
         this.model.rotateY(Math.PI);
