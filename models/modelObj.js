@@ -84,9 +84,14 @@ class Model {
 
             return false; 
 
-        else
-
+        else {
+            /*
+            console.log("POS2D",pos2D);
+            console.log("WIDTH/HEIGHT", [width, height]);
+            console.log("BBOX",bbox);*/
             return true; 
+        }
+
     }
 
     isCollidingWithBB(obj_bbox) {

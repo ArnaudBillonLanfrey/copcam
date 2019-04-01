@@ -16,17 +16,15 @@ function initSplatShader() {
 function Splat(splatTexture) {
     this.splatTexture = splatTexture;
     this.initParameters();
-    var wo2 = 0.5*this.width;
-    var ho2 = 0.5*this.height;
-    this.real_width = wo2;
-    this.real_height = ho2;
-
+    //0.966 -> over plane
+    // 0.990 -> under  heightfield
+    var z_axis = 0.967 + Math.random()*0.020;
     // un tableau contenant les positions des sommets (sur CPU donc)
     var vertices = [
-	-wo2,-ho2, 0.989,
-	wo2,-ho2, 0.989,
-	wo2, ho2, 0.989,
-	-wo2, ho2, 0.989
+	-this.width,-this.height, z_axis,
+	this.width,-this.height, z_axis,
+	this.width, this.height, z_axis,
+	-this.width, this.height, z_axis
     ];
     
     var coords = [
@@ -77,9 +75,10 @@ Splat.prototype.shader = function() {
 }
 
 Splat.prototype.initParameters = function() {
-    this.width = 0.5;
-    this.height = 0.5;
+    this.width = 0.25;
+    this.height = 0.25;
     this.position = [0.0,-0.7];
+    this.speed = 0.05;
 
     //this.tex = initTexture("spaceship.png");
     // we could init some params here 
@@ -91,7 +90,7 @@ Splat.prototype.setPosition = function(x,y) {
 
 Splat.prototype.setParameters = function(elapsed) {
     // we could animate something here
-    this.position[1] += 0.05;
+    this.position[1] += this.speed;
     if(this.position[1] > 1) {
         this.clear();
     }

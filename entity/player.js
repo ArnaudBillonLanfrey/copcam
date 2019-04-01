@@ -1,11 +1,11 @@
 class Player extends BaseEntity {
     constructor(model) {
         super(model);
-        this.delayShoot = 500;
         this.canShoot = true;
         this.isRotating = false;
         this.model.isRotating = false;
         this.damage = 30;
+        this.projectile = null;
     }
 
     setRotating(bool) {
@@ -15,6 +15,14 @@ class Player extends BaseEntity {
     getDamage() {
         return this.damage;
     }
+    setProjectile(projectile) {
+        this.projectile = projectile;
+    }
+    getProjectile() {
+        return this.projectile;
+    }
+
+
     
 }
 

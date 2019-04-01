@@ -12,6 +12,7 @@
 
     <script type="text/javascript" src="models/modelObj.js"></script>
     <script type="text/javascript" src="models/splat.js"></script>
+    <script type="text/javascript" src="entity/projectiles/machinegun.js"></script>
     <script type="text/javascript" src="models/plane.js"></script>
 
     <script type="text/javascript" src="entity/baseEntity.js"></script>
@@ -329,14 +330,14 @@
 
             if (currentlyPressedKeys[32]) { // SPACE
                 if(player.canShoot) {
-                    let s = new Splat(splatTex);
-                    s.setPosition(player.model.getBBox()[1][0] + ((player.model.getBBox()[0][0] - player.model.getBBox()[1][0]) / 2), player.model.getBBox()[0][1]);
-                    shootSamples.push(s);
+                    let bullet = new Machinegun(machineGunText);
+                    bullet.setPosition(player.model.getBBox()[1][0] + ((player.model.getBBox()[0][0] - player.model.getBBox()[1][0]) / 2) - Math.random()*0.1 + Math.random()*0.1, player.model.getBBox()[0][1]);
+                    shootSamples.push(bullet);
                     player.canShoot = false;
                     //console.log(shootSamples.length);
                     setTimeout(() => {
                         player.canShoot = true;
-                    }, player.delayShoot);
+                    }, bullet.delayShoot);
                 } 
             }
 
@@ -424,10 +425,10 @@
         function spawnEnemies() {
             if(!id_spawnE) {
             var timeout_random = Math.random()*1000 * 8;
-            var num_enemies = Math.random() + 1 * 5;
+            var num_enemies = Math.random() * 2;
                 id_spawnE = setTimeout(() => {
                     for(var i=0;i<num_enemies;i++) {
-                        var newEnemy = new Enemy_1(new Plane(modelsData.plane.data, modelsData.plane.buffer))
+                        var newEnemy = new Enemy_1(new Plane(modelsData.plane.data, modelsData.plane.bufferOpt))
                         enemies.push(newEnemy);
                         entities.push(newEnemy);
                     }
@@ -444,7 +445,7 @@
             
             /* Manage objects */
             shootSamples = shootSamples.filter(s => s.loaded);
-            entities = entities.filter(e => e.isLoaded());
+            entities = entities.filter(e => e.isLoaded() && e.isAlive());
             enemies = enemies.filter(e => e.isAlive());
             entities.forEach( (e) => {
                 e.model.setLightValue(lightning);
@@ -452,7 +453,7 @@
             enemies.forEach( e => {
                 e.move(-1,0);
                 shootSamples.forEach( s => {
-                    if(e.model.isCollidingWith2D(s.position, s.real_width, s.real_height)) {
+                    if(e.model.isCollidingWith2D(s.position, s.width, s.height)) {
                         /*console.group("Collision")
                         console.log("--Hit--");
                         console.log(e);
@@ -512,6 +513,7 @@
                 entities.push(player);
             })
             splatTex = initTexture('textures/airplane.png');
+            machineGunText = initTexture('textures/clash2.png');
 
             heightfield = new Heightfield();
             background = new Background(fbo.texture(0));
