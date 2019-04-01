@@ -2,11 +2,12 @@ class Enemy_1 extends BaseEntity {
     constructor(model) {
         super(model);
         this.model.color = [255,0,0];
-        this.model.speedFactor = 0.05;
-        this.model.modifyScale([0.5,0.5,0.5]);
+        this.model.speedFactor = 0.005;
+        this.model.modifyScale([.5,.5,.5]);
         this.model.rotateY(Math.PI);
         this.model.position2D.y = 2.5;
         this.model.position2D.x = Math.random() * 2 - Math.random() * 2;
+        this.hp = 25;
     }
 
     setParameters(elapsed) {
@@ -17,6 +18,7 @@ class Enemy_1 extends BaseEntity {
             maxX > 1 ||
             minY < -1
         ) {
+            console.log("DISAPEAAAAAAAR");
             this.model.loaded = false;
         }
     }

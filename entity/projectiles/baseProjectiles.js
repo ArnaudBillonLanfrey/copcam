@@ -1,8 +1,8 @@
-class Machinegun extends baseProjectiles{
+class baseProjectiles extends Splat{
 
     constructor(texture) {
         super(texture);
-        this.damage = 7;
+        this.damage = 10;
     }
 
     initParameters() {
@@ -10,6 +10,9 @@ class Machinegun extends baseProjectiles{
         this.height = 0.1;
         this.position = {x:0,y:0};
         this.speed = 0.05;
-        this.delayShoot = 1;
+        this.delayShoot = 150;
+    }
+    getDamage() {
+        return this.damage;
     }
 }

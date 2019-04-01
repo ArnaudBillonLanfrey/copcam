@@ -74,52 +74,51 @@ class Model {
         //     == -1 > top
         // [0] == -1 > left
         //     ==  1 > right
-        //const { minX, maxX, minY, maxY } = this.getBBox();
-       /* if((pos2D[0] >= bbox[1][0])      // trop à droite
+        const { minX, maxX, minY, maxY } = this.getBBox();
+        if((pos2D.x >= maxX)      // trop à droite
 
-        || (pos2D[0] + width <= bbox[0][0]) // trop à gauche
+        || (pos2D.x + width <= minX) // trop à gauche
 
-        || (pos2D[1] >= bbox[1][1]) // trop en bas
+        || (pos2D.y <= maxY  ) // trop en bas
 
-        || (pos2D[1] + height <= bbox[0][1]))  // trop en haut
-
+        || (pos2D.y + height >= minY))  
+        {
+            /*
+            console.log("-------------------");
+            console.log(pos2D.x + ">=" + maxX);
+            console.log(pos2D.x + width + "<=" + minX);
+            console.log(pos2D.y + "<="+ minY );
+            console.log(pos2D.y + height +">="+ maxY);
+            console.log("-------------------");*/
             return false; 
-
+        }
+            
         else {
             /*
             console.log("POS2D",pos2D);
             console.log("WIDTH/HEIGHT", [width, height]);
             console.log("BBOX",bbox);*/
-            console.log(pos2D);
-            return false; 
-    //}
+            return true; 
+        }
 
     }
 
     isCollidingWithBB(obj_bbox) {
-        // [0][0] -> HD.x
-        //    [1] -> HD.y
-        // [1][0] -> BG.x
-        // [1][1] -> BG.Y
-        
-        // [1] ==  1 > bot
-        //     == -1 > top
-        // [0] == -1 > left
-        //     ==  1 > right
-       /* var bbox = this.getBBox();
-        if((obj_bbox[1][0] >= bbox[0][0])      // trop à droite
+        const { minX, maxX, minY, maxY } = this.getBBox();
+        if((obj_bbox.minX >= maxX)      // trop à droite
 
-        || (obj_bbox[0][0] <= bbox[1][0]) // trop à gauche
+        || (obj_bbox.maxX <= minX) // trop à gauche
 
-        || (obj_bbox[1][1] <= bbox[0][1]) // trop en bas
+        || (obj_bbox.minY <= maxY  ) // trop en bas
 
-        || (obj_bbox[0][1] >= bbox[1][1]))  // trop en haut
+        || (obj_bbox.maxY >= minY))  
+        {
 
             return false; 
 
-        else {
+        }else {
             return true; 
-        }*/
+        }
 
 
     }
@@ -178,7 +177,9 @@ class Model {
 
         this.lightValue = 0;
         this.color = [217,122,80];
-        // trouver les model/view/proj matrices pour voir l'objet comme vous le souhaitez
+        this.currentCameraCenter = [0,0,0];
+        this.timer = 0;
+        this.offset = 0;
     }
     modifyScale(scale) {
         this.modelMatrix = mat4.scale(this.modelMatrix, scale);
@@ -190,22 +191,39 @@ class Model {
     move(x,y) {
         const { minX, maxX, minY, maxY } = this.getBBox();
         if ((x === 1 && maxX < 1)
-            || (x === -1 && minX > -1)
-            || (y === 1 && maxY < 1)
-            || (y === -1 && minY > -1)) {
-               this.position2D.x = this.position2D.x + x * this.speedFactor,
-               this.position2D.y = this.position2D.y + y * this.speedFactor
-               this.currentTransform = mat4.translate(mat4.identity(), [-this.position2D.y, 0, -this.position2D.x]);
+        || (x === -1 && minX > -1)
+        || (y === 1 && minY < 1)
+        || (y === -1 && maxY > -1)) {
+            this.position2D.x = this.position2D.x + x * this.speedFactor,
+            this.position2D.y = this.position2D.y + y * this.speedFactor
+            this.currentTransform = mat4.translate(mat4.identity(), [-this.position2D.y, 0, -this.position2D.x]);
        }
+    }
+    moveNoBC(x,y) {
+        this.position2D.x = this.position2D.x + x * this.speedFactor,
+        this.position2D.y = this.position2D.y + y * this.speedFactor
+        this.currentTransform = mat4.translate(mat4.identity(), [-this.position2D.y, 0, -this.position2D.x]);
     }
 
     getBBox() {
-        return {
-            minX: this.bbmaxP[0],
-            maxX: this.bbminP[0],
-            minY: this.bbmaxP[1],
-            maxY: this.bbminP[1]
+        // happen when we rotate the model
+        if(this.bbmaxP[0] < this.bbminP[0]) {
+            //invvert
+            return {
+                minX: this.bbmaxP[0],
+                minY: this.bbminP[1],
+                maxX: this.bbminP[0],
+                maxY: this.bbmaxP[1]
+            }
+        } else {
+            return {
+                minX: this.bbminP[0],
+                minY: this.bbmaxP[1],
+                maxX: this.bbmaxP[0],
+                maxY: this.bbminP[1]
+            }
         }
+
     }
 
     sendUniformVariables() {

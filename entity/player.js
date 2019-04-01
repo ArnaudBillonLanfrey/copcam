@@ -4,16 +4,16 @@ class Player extends BaseEntity {
         this.canShoot = true;
         this.isRotating = false;
         this.model.isRotating = false;
-        this.damage = 30;
+        this.damageMultiplier = 1;
         this.projectile = null;
+        this.model.modifyScale([.7,.7,.7]);
     }
 
     setRotating(bool) {
         this.model.isRotating = bool;
     }
-
-    getDamage() {
-        return this.damage;
+    getDamageMultiplier() {
+        return this.damageMultiplier;
     }
     setProjectile(projectile) {
         this.projectile = projectile;

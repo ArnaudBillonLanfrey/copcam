@@ -9,11 +9,10 @@ class Plane extends Model {
 
     move(x, y) {
         const { minX, maxX, minY, maxY } = this.getBBox();
-
         if ((x === 1 && maxX < 1)
-            || (x === -1 && minX > -1)
-            || (y === 1 && maxY < 1)
-            || (y === -1 && minY > -1)) {
+        || (x === -1 && minX > -1)
+        || (y === 1 && minY < 1)
+        || (y === -1 && maxY > -1)) {
             if ((this.rotation < Math.PI / 6 && x === -1) || (this.rotation > -Math.PI / 6 && x === 1)) {
                 this.rotation -= x * this.rotationFactor;
             }
@@ -24,6 +23,7 @@ class Plane extends Model {
     }
 
     setParameters(elapsed) {
+        //console.log(this.getBBox());
         var rMat = mat4.rotate(mat4.identity(), this.rotation, [1, 0, 0]);
         var tMat = mat4.translate(mat4.identity(), [-this.position2D.y, 0, -this.position2D.x]);
         this.currentTransform = mat4.multiply(tMat,rMat);

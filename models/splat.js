@@ -18,7 +18,7 @@ function Splat(splatTexture) {
     this.initParameters();
     //0.966 -> over plane
     // 0.990 -> under  heightfield
-    var z_axis = 0.967 + Math.random()*0.020;
+    var z_axis = 0.967 /*+ Math.random()*0.020*/;
     // un tableau contenant les positions des sommets (sur CPU donc)
     var vertices = [
 	-this.width,-this.height, z_axis,

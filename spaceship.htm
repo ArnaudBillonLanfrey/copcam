@@ -12,6 +12,8 @@
 
     <script type="text/javascript" src="models/modelObj.js"></script>
     <script type="text/javascript" src="models/splat.js"></script>
+
+    <script type="text/javascript" src="entity/projectiles/baseProjectiles.js"></script>
     <script type="text/javascript" src="entity/projectiles/machinegun.js"></script>
     <script type="text/javascript" src="models/plane.js"></script>
     <script type="text/javascript" src="models/explosion.js"></script>
@@ -339,10 +341,9 @@
                 if(player.canShoot) {
                     let bullet = new Machinegun(textures.machineGunText);
                     const { minX, maxX, minY, maxY } = player.model.getBBox();
-                    bullet.setPosition(minX + ((maxX - minX) / 2) - Math.random()*0.1 + Math.random()*0.1, maxY);
+                    bullet.setPosition(minX + ((maxX - minX) / 2) - Math.random()*0.1 + Math.random()*0.1, minY);
                     shootSamples.push(bullet);
                     player.canShoot = false;
-                    //console.log(shootSamples.length);
                     setTimeout(() => {
                         player.canShoot = true;
                     }, bullet.delayShoot);
@@ -392,12 +393,15 @@
             // test pour afficher un splat quand on appuie sur espace 
             shootSamples.forEach(s => {
                 // activation de la transparence 
+                gl.disable(gl.DEPTH_TEST);
                 gl.enable(gl.BLEND);
                 gl.useProgram(s.shader());
                 s.sendUniformVariables();
                 s.draw();
                 // on desactive la transparence 
                 gl.disable(gl.BLEND);
+                gl.enable(gl.DEPTH_TEST);
+
             });
             enemies.forEach( e => {
                 gl.useProgram(e.model.shader);
@@ -405,11 +409,15 @@
                 e.model.draw();
             });
             currentAnimations.forEach( a => {
+                gl.disable(gl.DEPTH_TEST);
+
                 gl.enable(gl.BLEND);
                 gl.useProgram(a.shader());
                 a.sendUniformVariables();
                 a.draw();
                 gl.disable(gl.BLEND);
+                gl.enable(gl.DEPTH_TEST);
+
 
             });
         }
@@ -447,8 +455,6 @@
             var timeout_random = (Math.random()*1000 * 8)/enemyLevel;
             var num_enemies = Math.random() * 2;
                 id_spawnE = setTimeout(() => {
-                    console.log(enemyLevel);
-                    console.log(timeout_random);
                     for(var i=0;i<num_enemies;i++) {
                         var newEnemy = new Enemy_1(new Plane(modelsData.plane.data, modelsData.plane.bufferOpt))
                         enemies.push(newEnemy);
@@ -463,7 +469,7 @@
         function gameManager() {
             
             
-           //spawnEnemies();
+           spawnEnemies();
             
             /* Manage objects */
             shootSamples = shootSamples.filter(s => s.loaded);
@@ -473,7 +479,7 @@
                 e.model.setLightValue(lightning);
             })
             enemies.forEach( e => {
-                e.move(0,-1);
+                e.moveNoBC(0,-1);
                 shootSamples.forEach( s => {
                     if(e.model.isCollidingWith2D(s.position, s.width, s.height)) {
                         /*console.group("Collision")
@@ -482,10 +488,11 @@
                         console.log("--By--");
                         console.log(s);
                         console.groupEnd();*/
-                        e.takeDamage(player.getDamage());
+                        e.takeDamage(player.getDamageMultiplier() * s.getDamage());
                         if(e.isDead()) {
                             let explo = new Explosion(textures.vfx.explosion);
-                            explo.setPosition(e.model.getBBox()[1][0] + ((e.model.getBBox()[0][0] - e.model.getBBox()[1][0]) / 2), e.model.getBBox()[1][1]);
+                            const { minX, maxX, minY, maxY } = e.model.getBBox();
+                            explo.setPosition(minX + ((maxX - minX) / 2) - Math.random()*0.1 + Math.random()*0.1, minY);
                             currentAnimations.push(explo);
                         }
                         s.clear();
@@ -494,12 +501,19 @@
                 if(e.model.isCollidingWithBB(player.model.getBBox())) {
                     console.log("OK");
                     player.takeDamage(10);
+                    console.log(player.getHP());
                     e.takeDamage(100);
+                    if(e.isDead()) {
+                        let explo = new Explosion(textures.vfx.explosion);
+                        const { minX, maxX, minY, maxY } = e.model.getBBox();
+                        explo.setPosition(minX + ((maxX - minX) / 2) - Math.random()*0.1 + Math.random()*0.1, minY);
+                        currentAnimations.push(explo);
+                    }
                 }
             });
 
             //console.log(player.model.getBBox());
-
+            updateHUD()
             lightning += 0.01;
         }
 
@@ -597,7 +611,7 @@
         }
         function updateHUD() {
             if(player) {
-                document.getElementById("life").style.backgroundImage = `linear-gradient(to right, rgb(0, 168, 36) ${player.getHP()}%, rgb(214, 55, 55) ${100-player.getHP()}%)`;
+                document.getElementById("life").style.backgroundImage = `linear-gradient(to right, rgb(0, 168, 36) ${player.getHP()}%, rgb(214, 55, 55) 0%)`;
             }
         }
 
@@ -682,9 +696,10 @@
             <input class="btn btn-secondary" type="button" value="Play" id="startButton" onclick="startGame()"/>
             <input class="btn btn-secondary" type="button" value="Pause" id="pauseButton" onclick="pauseGame()"/>
             <input class="btn btn-secondary" type="button" value="Restart" id="restartButton" onclick="restartGame()"/>
-            <hr>
-            <div id="life"/>
         </fieldset>
+        <hr>
+        <p>Your life</p>
+        <div id="life"></div>
     </div>
 </body>
 

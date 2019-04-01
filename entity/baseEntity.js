@@ -8,6 +8,9 @@ class BaseEntity {
     move(x,y) {
         this.model.move(x,y);
     }
+    moveNoBC(x,y) {
+        this.model.moveNoBC(x,y);
+    }
 
     setPosition(x,y) {
         this.model.setPosition(x,y);
