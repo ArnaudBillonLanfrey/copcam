@@ -25,10 +25,7 @@ class Player extends BaseEntity {
         this.model.speedFactor = speedFactor;
     }
     getSpeedFacotr() {
-        return this.mode.speedFactor;k
-    }
-
-
-    
+        return this.mode.speedFactor;
+    }    
 }
 
