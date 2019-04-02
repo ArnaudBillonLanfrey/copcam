@@ -4,8 +4,8 @@ class Model {
         this.bbmin = [0,0,0];
         this.bbmax = [0,0,0];
         
-        this.bbminP = [0,0,0,0];
-        this.bbmaxP = [0,0,0,0];
+        this.bbminP = [-100,-100,-100,-100];
+        this.bbmaxP = [-100,-100,-100,-100];
         this.loaded = false;
     
         if(!bufferOpts) {
@@ -177,9 +177,6 @@ class Model {
 
         this.lightValue = 0;
         this.color = [217,122,80];
-        this.currentCameraCenter = [0,0,0];
-        this.timer = 0;
-        this.offset = 0;
     }
     modifyScale(scale) {
         this.modelMatrix = mat4.scale(this.modelMatrix, scale);

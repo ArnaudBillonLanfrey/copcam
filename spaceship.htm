@@ -125,15 +125,15 @@
         uniform sampler2D uHeightfield; // la texture de hauteurs
         in vec2 vTextureCoord; // recuperation de la coord rasterisee
         out vec4 outColor;
+        vec2 newText;
 
         vec3 computeNormal() {
             const float scale = 20.0;
-
             vec2 ps = 1.0/vec2(textureSize(uHeightfield,0));
-            float xp = texture(uHeightfield,vTextureCoord+vec2( ps.x,0.0)).x;
-            float xm = texture(uHeightfield,vTextureCoord+vec2(-ps.x,0.0)).x;
-            float yp = texture(uHeightfield,vTextureCoord+vec2(0.0, ps.y)).x;
-            float ym = texture(uHeightfield,vTextureCoord+vec2(0.0,-ps.y)).x;
+            float xp = texture(uHeightfield,newText+vec2( ps.x,0.0)).x;
+            float xm = texture(uHeightfield,newText+vec2(-ps.x,0.0)).x;
+            float yp = texture(uHeightfield,newText+vec2(0.0, ps.y)).x;
+            float ym = texture(uHeightfield,newText+vec2(0.0,-ps.y)).x;
 
             float gx = 0.5*(xp-xm)*scale;
             float gy = 0.5*(yp-ym)*scale;
@@ -145,7 +145,11 @@
         }
 
         void main(void) {
-            float d = texture(uHeightfield,vTextureCoord).x;
+            vec2 original = vTextureCoord;
+            newText = vTextureCoord;
+            newText.x -= sin(vTextureCoord.y*10.0)*0.1 * (0.5 - abs(vTextureCoord.x-0.5));
+            newText.y -= sin(original.x*10.0)*0.1 * (0.5 - abs(vTextureCoord.y));
+            float d = texture(uHeightfield,newText).x;
             vec3 n = normalize(computeNormal());
             vec3 l = normalize(vec3(0.,-.8,.7));
             vec3 color;
@@ -289,6 +293,8 @@
 
         // une bonne maniere de gerer les evenements claviers
         var currentlyPressedKeys = {};
+
+        var enemyKilled = 0;
 
         function handleKeyDown(event) {
             currentlyPressedKeys[event.keyCode] = true;
@@ -459,7 +465,6 @@
             var num_enemies = Math.random() * 2;
                 id_spawnE = setTimeout(() => {
                     for(var i=0;i<num_enemies;i++) {
-                        //TODO change POSITION directly to avoid plane spawning in the middle of screen !
                         var newEnemy = new Enemy_1(new Plane(modelsData.plane.data, modelsData.plane.bufferOpt))
                         enemies.push(newEnemy);
                         entities.push(newEnemy);
@@ -501,6 +506,7 @@
                             const { minX, maxX, minY, maxY } = e.model.getBBox();
                             explo.setPosition(minX + ((maxX - minX) / 2) - Math.random()*0.1 + Math.random()*0.1, minY);
                             currentAnimations.push(explo);
+                            enemyKilled++;
                         }
                         s.clear();
                     }
@@ -515,6 +521,7 @@
                         const { minX, maxX, minY, maxY } = e.model.getBBox();
                         explo.setPosition(minX + ((maxX - minX) / 2) - Math.random()*0.1 + Math.random()*0.1, minY);
                         currentAnimations.push(explo);
+                        enemyKilled++;
                     }
                 }
             });
@@ -622,6 +629,7 @@
         function updateHUD() {
             if(player) {
                 document.getElementById("life").style.backgroundImage = `linear-gradient(to right, rgb(0, 168, 36) ${player.getHP()}%, rgb(214, 55, 55) 0%)`;
+                document.getElementById("score").innerHTML = enemyKilled;
             }
         }
 
@@ -710,6 +718,8 @@
         <hr>
         <p>Your life</p>
         <div id="life"></div>
+        <hr>
+        <p>Score : <span id="score">0</span></p>
     </div>
 </body>
 
