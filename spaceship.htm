@@ -26,6 +26,8 @@
     <script type="text/javascript" src="entity/baseEntity.js"></script>
     <script type="text/javascript" src="entity/enemy_1.js"></script>
     <script type="text/javascript" src="entity/player.js"></script>
+    <script type="text/javascript" src="entity/bigBoss.js"></script>
+
 
 
     <script id="heightfield-vs" type="x-shader/x-vertex">#version 300 es
@@ -295,6 +297,12 @@
         var currentlyPressedKeys = {};
 
         var enemyKilled = 0;
+        var baseConfigModels = {};
+
+        var canSpawnEnemy = true;
+        var bossCinematic = false;
+        var cinematicTime = 0;
+        var resetBossCinematic = false;
 
         function handleKeyDown(event) {
             currentlyPressedKeys[event.keyCode] = true;
@@ -308,9 +316,10 @@
         function handleKeys() {
             if (currentlyPressedKeys[33]) {
                 // Page Up (par exemple)
-                let hit = new baseVfx(textures.vfx.hit,50);
-                hit.setPosition(0,0);
-                currentAnimations.push(hit);
+                canPressKey = false;
+                    setTimeout(() => {
+                        canPressKey = true;
+                    }, delayBetweenRepeatKey);
             }
 
             // vous pouvez utiliser ce genre de fonction
@@ -335,7 +344,7 @@
 
             if (currentlyPressedKeys[77]) { // M
                 if(canPressKey) {
-                    newEnemy =  new Enemy_1(new Plane(modelsData.plane.data, modelsData.plane.bufferOpt));
+                    newEnemy =  new Enemy_1(new Plane(baseConfigModels, modelsData.plane.data, modelsData.plane.bufferOpt));
                     enemies.push(newEnemy);
                     entities.push(newEnemy);
                     canPressKey = false;
@@ -454,25 +463,104 @@
                 currentAnimations.forEach( a => {
                     a.setParameters(elapsed);
                 });
+                if(resetBossCinematic) {
+                    if(bossCinematic) {
+                        bossCinematic = false;
+                        cinematicTime = 0;
+                    }
+                    var newZoom = 10;
+                    if(cinematicTime + elapsed <= 1500) {
+                        newZoom -= (cinematicTime+elapsed) * (5/1500);
+                    } else {
+                        newZoom = 5;
+                        cinematicTime = 0;
+                        resetBossCinematic = false;
+                    }
+                    //console.log(cinematicTime+elapsed);
+                    let newView =  mat4.lookAt( [0,newZoom,0],[0,0,0],[-1,0,0]);
+                    baseConfigModels.viewMatrix = newView
+                    entities.forEach( e => {
+                        e.model.modifyView(newView);
+                    });
+                    player.model.modifyView(newView);
+                    cinematicTime+=elapsed;
+                }
+                if(bossCinematic) {
+                    var newZoom = 5;
+                    if(cinematicTime + elapsed <= 1500) {
+                        newZoom += (cinematicTime+elapsed) * (5/1500);
+                    } else {
+                        newZoom = 10;
+                        cinematicTime = 0;
+                        bossCinematic = false;
+                    }
+                    //console.log(cinematicTime+elapsed);
+                    let newView =  mat4.lookAt( [0,newZoom,0],[0,0,0],[-1,0,0]);
+                    baseConfigModels.viewMatrix = newView
+                    entities.forEach( e => {
+                        e.model.modifyView(newView);
+                    });
+                    player.model.modifyView(newView);
+                    cinematicTime+=elapsed;
+                }
+
 
             }
             lastTime = timeNow;
         }
 
+        function unspawnBoss() {
+            resetBossCinematic = true;
+            canSpawnEnemy = true;
+        }
+
+
+        function spawnBoss() {
+            let newBoss = new BigBoss(new Plane(baseConfigModels, modelsData.plane.data, modelsData.plane.bufferOpt));
+            enemies.push(newBoss);
+            entities.push(newBoss);
+            let newView =  mat4.lookAt( [0,10,0],[0,0,0],[-1,0,0]);
+            baseConfigModels.viewMatrix = newView
+            entities.forEach( e => {
+                e.model.modifyView(newView);
+            });
+            player.model.modifyView(newView);
+            canSpawnEnemy = false;
+            bossCinematic = true;
+        }
+
         function spawnEnemies() {
-            if(!id_spawnE) {
-            var timeout_random = (Math.random()*1000 * 8)/enemyLevel;
-            var num_enemies = Math.random() * 2;
-                id_spawnE = setTimeout(() => {
-                    for(var i=0;i<num_enemies;i++) {
-                        var newEnemy = new Enemy_1(new Plane(modelsData.plane.data, modelsData.plane.bufferOpt))
-                        enemies.push(newEnemy);
-                        entities.push(newEnemy);
-                    }
-                    id_spawnE = null;
-                }, timeout_random);
+            if(canSpawnEnemy) {
+                if(!id_spawnE) {
+                var timeout_random = (Math.random()*1000 * 8)/enemyLevel;
+                var num_enemies = Math.random() * 2;
+                    id_spawnE = setTimeout(() => {
+                        for(var i=0;i<num_enemies;i++) {
+                            var newEnemy = new Enemy_1(new Plane(baseConfigModels,modelsData.plane.data, modelsData.plane.bufferOpt))
+                            enemies.push(newEnemy);
+                            entities.push(newEnemy);
+                        }
+                        id_spawnE = null;
+                    }, timeout_random);
+                }
+            } else {
+                id_spawnE = clearTimeout(id_spawnE);
             }
 
+        }
+        function destroyEnemy(e) {
+            let explo = new baseVfx(textures.vfx.explosion,50);
+            const { minX, maxX, minY, maxY } = e.model.getBBox();
+            explo.setPosition(minX + ((maxX - minX) / 2) - Math.random()*0.1 + Math.random()*0.1, minY);
+            currentAnimations.push(explo);
+            enemyKilled++;
+            if(e instanceof BigBoss) {
+                unspawnBoss();
+            } else {
+                if(enemyKilled%40===0) {
+                    spawnBoss();
+                } 
+            }
         }
         // moteur de jeu
         function gameManager() {
@@ -502,26 +590,16 @@
                         hit.setPosition(...Object.values(s.position));
                         currentAnimations.push(hit);
                         if(e.isDead()) {
-                            let explo = new baseVfx(textures.vfx.explosion,50);
-                            const { minX, maxX, minY, maxY } = e.model.getBBox();
-                            explo.setPosition(minX + ((maxX - minX) / 2) - Math.random()*0.1 + Math.random()*0.1, minY);
-                            currentAnimations.push(explo);
-                            enemyKilled++;
+                            destroyEnemy(e);
                         }
                         s.clear();
                     }
                 });
                 if(e.model.isCollidingWithBB(player.model.getBBox())) {
-                    console.log("OK");
                     player.takeDamage(10);
-                    console.log(player.getHP());
                     e.takeDamage(100);
                     if(e.isDead()) {
-                        let explo = new baseVfx(textures.vfx.explosion,50);
-                        const { minX, maxX, minY, maxY } = e.model.getBBox();
-                        explo.setPosition(minX + ((maxX - minX) / 2) - Math.random()*0.1 + Math.random()*0.1, minY);
-                        currentAnimations.push(explo);
-                        enemyKilled++;
+                        destroyEnemy(e);
                     }
                 }
             });
@@ -560,14 +638,14 @@
             initSplatShader();
             loadModel('obj/plane.obj').then( (objData) => {
                 console.log("Plane model loaded");
-                var planeObj = new Plane(objData);
+                var planeObj = new Plane(baseConfigModels,objData);
                 modelsData = { 
                     plane : {
                         data: objData, 
                         bufferOpt: {vertexBuffer: planeObj.vertexBuffer, normalBuffer: planeObj.normalBuffer, vao:planeObj.vao}
                     }
                 }
-                player = new Player( new Plane(modelsData.plane.data));
+                player = new Player( new Plane(baseConfigModels, modelsData.plane.data));
                 player.setSpeedFactor(0.05);
                 entities.push(player);
             })

@@ -12,6 +12,6 @@ class Machinegun extends baseProjectiles{
         this.height = 0.08 * randScale;
         this.position = {x:0,y:0};
         this.speed = 0.05;
-        this.delayShoot = 1;
+        this.delayShoot = 75;
     }
 }

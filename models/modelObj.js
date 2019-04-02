@@ -1,12 +1,13 @@
 class Model {
 
-    constructor(objData, bufferOpts = null) {       
+    constructor(config,objData,bufferOpts = null) {       
         this.bbmin = [0,0,0];
         this.bbmax = [0,0,0];
         
         this.bbminP = [-100,-100,-100,-100];
         this.bbmaxP = [-100,-100,-100,-100];
         this.loaded = false;
+        this.config = config;
     
         if(!bufferOpts) {
             this.vertexBuffer = gl.createBuffer();
@@ -23,7 +24,7 @@ class Model {
             this.normalBuffer = bufferOpts.normalBuffer;
             this.vao = bufferOpts.vao;
             this.computeBoundingBox(objData[0]);
-            this.initParameters();
+            this.initParameters(this.config);
             this.loaded = true;
             
         }
@@ -133,7 +134,7 @@ class Model {
         /*console.log("BBox min: "+this.bbmin[0]+","+this.bbmin[1]+","+this.bbmin[2]);
         console.log("BBox max: "+this.bbmax[0]+","+this.bbmax[1]+","+this.bbmax[2]);*/
     
-        this.initParameters();
+        this.initParameters(this.config);
     
         this.vao = gl.createVertexArray(); // id qui stock les buffers créé pour les manipuler facilement
         gl.bindVertexArray(this.vao); // attache les futurs modifs au vertex array
@@ -163,7 +164,7 @@ class Model {
         this.loaded = true;
     }
 
-    initParameters() {
+    initParameters(config) {
         this.currentTransform = mat4.identity();
         this.modelMatrix = mat4.identity(); //positionne l'obj
         this.viewMatrix = mat4.identity(); //positionne la vue
@@ -177,9 +178,16 @@ class Model {
 
         this.lightValue = 0;
         this.color = [217,122,80];
+        if(config) {
+            Object.assign(this,config);
+        }
     }
     modifyScale(scale) {
         this.modelMatrix = mat4.scale(this.modelMatrix, scale);
+    }
+
+    modifyView(newView) {
+        this.viewMatrix = newView;
     }
 
     setParameters(elapsed) {
@@ -196,6 +204,7 @@ class Model {
             this.currentTransform = mat4.translate(mat4.identity(), [-this.position2D.y, 0, -this.position2D.x]);
        }
     }
+    // move without checking border (screen) collision 
     moveNoBC(x,y) {
         this.position2D.x = this.position2D.x + x * this.speedFactor,
         this.position2D.y = this.position2D.y + y * this.speedFactor
