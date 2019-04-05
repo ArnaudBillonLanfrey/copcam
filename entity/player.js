@@ -5,8 +5,9 @@ class Player extends BaseEntity {
         this.isRotating = false;
         this.model.isRotating = false;
         this.damageMultiplier = 1;
-        this.projectile = null;
+        this.attackSpeedMultiplier = 1;
         this.model.modifyScale([.7,.7,.7]);
+        this.chanceToPopSpike = .05;
     }
 
     setRotating(bool) {
@@ -15,17 +16,23 @@ class Player extends BaseEntity {
     getDamageMultiplier() {
         return this.damageMultiplier;
     }
-    setProjectile(projectile) {
-        this.projectile = projectile;
+    getAttackSpeedMultiplier() {
+        return this.attackSpeedMultiplier;
     }
-    getProjectile() {
-        return this.projectile;
+    setDamageMultiplier(newDmg) {
+        this.damageMultiplier=newDmg;
     }
-    setSpeedFactor(speedFactor) {
-        this.model.speedFactor = speedFactor;
+    setAttackSpeedMultiplier(newAtkSpeed) {
+        this.attackSpeedMultiplier = newAtkSpeed;
     }
-    getSpeedFacotr() {
-        return this.mode.speedFactor;
-    }    
+
+    incrChanceToPopSpike(amount) {
+        this.chanceToPopSpike+= this.chanceToPopSpike + amount > 1 ? 0 : amount;
+    }
+
+    getChanceToPopSpike() {
+        return this.chanceToPopSpike;
+    }
+
 }
 

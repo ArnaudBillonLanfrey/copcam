@@ -8,6 +8,7 @@ function initBackgroundShader() {
     
     // adresse de la texture uHeightfield dans le shader
     backgroundShader.heightfieldUniform = gl.getUniformLocation(backgroundShader, "uHeightfield");
+    backgroundShader.multiplier = gl.getUniformLocation(backgroundShader, "uMultiplier");
     
     console.log("background shader initialized");
 }
@@ -73,16 +74,17 @@ Background.prototype.shader = function() {
 
 Background.prototype.initParameters = function() {
     // we could init some params here 
+    this.distorsion = 0;
 }
 
 Background.prototype.setParameters = function(elapsed) {
-    // we could animate something here
 }
 
 Background.prototype.sendUniformVariables = function() {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D,this.heightfieldTexture);
     gl.uniform1i(backgroundShader.heightfieldUniform, 0); //envoie donnée du CPU au GPU
+    gl.uniform1f(backgroundShader.multiplier, this.distorsion);
 }
 
 Background.prototype.draw = function() {

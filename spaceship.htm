@@ -16,8 +16,10 @@
 
     <script type="text/javascript" src="entity/projectiles/baseProjectiles.js"></script>
     <script type="text/javascript" src="entity/projectiles/machinegun.js"></script>
-    <script type="text/javascript" src="models/plane.js"></script>
+    <script type="text/javascript" src="entity/projectiles/spike.js"></script>
 
+
+    <script type="text/javascript" src="models/plane.js"></script>
     <script type="text/javascript" src="models/vfx/baseVfx.js"></script>
     <script type="text/javascript" src="models/vfx/explosion.js"></script>
     <script type="text/javascript" src="models/vfx/hit.js"></script>
@@ -80,7 +82,7 @@
       }
 
       float fractalNoise(in vec2 p) {
-	  const int nb = 5; // nb octave
+	  const int nb = 10; // nb octave
 	  float f = uFrequency; // frequency
 	  float a = uAmplitude; // amplitude
 	  float e = uPersistence; // persistence
@@ -127,6 +129,7 @@
         uniform sampler2D uHeightfield; // la texture de hauteurs
         in vec2 vTextureCoord; // recuperation de la coord rasterisee
         out vec4 outColor;
+        uniform float uMultiplier;  // offset of sin waves
         vec2 newText;
 
         vec3 computeNormal() {
@@ -149,8 +152,8 @@
         void main(void) {
             vec2 original = vTextureCoord;
             newText = vTextureCoord;
-            newText.x -= sin(vTextureCoord.y*10.0)*0.1 * (0.5 - abs(vTextureCoord.x-0.5));
-            newText.y -= sin(original.x*10.0)*0.1 * (0.5 - abs(vTextureCoord.y));
+            newText.x -= sin(vTextureCoord.y*10.0)*uMultiplier * (0.5 - abs(vTextureCoord.x-0.5));
+            newText.y -= sin(original.x*10.0)*uMultiplier * (0.5 - abs(vTextureCoord.y - 0.5));
             float d = texture(uHeightfield,newText).x;
             vec3 n = normalize(computeNormal());
             vec3 l = normalize(vec3(0.,-.8,.7));
@@ -160,15 +163,15 @@
 
             if( d < 0.05) {
                 //blue
-                color = vec3(0.,0.,1.);
+                color = vec3(0.+1.*uMultiplier,0.,1.-1.*uMultiplier*1.5);
             }
             if( d >= 0.05) {
                 // brown
-                color = normalize(vec3(160, 116, 69));
+                color = normalize(vec3(160.+50.*uMultiplier, 116.+30.*uMultiplier, 69.+100.*uMultiplier));
             } 
             if( d >= 0.3) {
                 //green
-                color = normalize(vec3(87,213,59));
+                color = normalize(vec3(87.+100.*uMultiplier,213.-100.*uMultiplier,59.));
             }
             if( d >= 0.8) {
                 //gray
@@ -303,6 +306,8 @@
         var bossCinematic = false;
         var cinematicTime = 0;
         var resetBossCinematic = false;
+        var cinematicDuration = 1500;
+        var delayBetweenBoss = 40;
 
         function handleKeyDown(event) {
             currentlyPressedKeys[event.keyCode] = true;
@@ -325,38 +330,38 @@
             // vous pouvez utiliser ce genre de fonction
             // pour faire bouger votre vaisseau 
             if (currentlyPressedKeys[68]) { // D
-                player.move(1, 0);
+                if(!bossCinematic && player) {
+                    player.move(1, 0);
                 player.setRotating(true);
-            }
-
-            if (currentlyPressedKeys[81]) { // Q
-                player.move(-1, 0);
-                player.setRotating(true);
-            }
-
-            if (currentlyPressedKeys[90]) { // Z
-                player.move(0, 1);
-            }
-
-            if (currentlyPressedKeys[83]) { // S
-                player.move(0, -1);
-            }
-
-            if (currentlyPressedKeys[77]) { // M
-                if(canPressKey) {
-                    newEnemy =  new Enemy_1(new Plane(baseConfigModels, modelsData.plane.data, modelsData.plane.bufferOpt));
-                    enemies.push(newEnemy);
-                    entities.push(newEnemy);
-                    canPressKey = false;
-                    setTimeout(() => {
-                        canPressKey = true;
-                    }, delayBetweenRepeatKey);
                 }
 
             }
 
+            if (currentlyPressedKeys[81]) { // Q
+                if(!bossCinematic && player) {
+                    player.move(-1, 0);
+                    player.setRotating(true);
+                }
+            }
+
+            if (currentlyPressedKeys[90]) { // Z
+                if(!bossCinematic && player) {
+                    player.move(0, 1);
+                }
+            }
+
+            if (currentlyPressedKeys[83] && player) { // S
+                if(!bossCinematic) {
+                    player.move(0, -1);
+                }
+            }
+
+            if (currentlyPressedKeys[77]) { // M
+
+            }
+
             if (currentlyPressedKeys[32]) { // SPACE
-                if(player.canShoot) {
+                if(player && player.canShoot && !bossCinematic) {
                     let bullet = new Machinegun(textures.machineGunText);
                     const { minX, maxX, minY, maxY } = player.model.getBBox();
                     bullet.setPosition(minX + ((maxX - minX) / 2) - Math.random()*0.1 + Math.random()*0.1, minY);
@@ -364,7 +369,7 @@
                     player.canShoot = false;
                     setTimeout(() => {
                         player.canShoot = true;
-                    }, bullet.delayShoot);
+                    }, (bullet.delayShoot / player.getAttackSpeedMultiplier()) < 10 ? 10 : (bullet.delayShoot / player.getAttackSpeedMultiplier()));
                 } 
             }
 
@@ -469,12 +474,13 @@
                         cinematicTime = 0;
                     }
                     var newZoom = 10;
-                    if(cinematicTime + elapsed <= 1500) {
-                        newZoom -= (cinematicTime+elapsed) * (5/1500);
+                    if(cinematicTime + elapsed <= cinematicDuration) {
+                        newZoom -= (cinematicTime+elapsed) * (5/cinematicDuration);
                     } else {
                         newZoom = 5;
                         cinematicTime = 0;
                         resetBossCinematic = false;
+                        background.distorsion = 0;
                     }
                     //console.log(cinematicTime+elapsed);
                     let newView =  mat4.lookAt( [0,newZoom,0],[0,0,0],[-1,0,0]);
@@ -484,11 +490,12 @@
                     });
                     player.model.modifyView(newView);
                     cinematicTime+=elapsed;
+                    background.distorsion-=0.003;
                 }
                 if(bossCinematic) {
                     var newZoom = 5;
-                    if(cinematicTime + elapsed <= 1500) {
-                        newZoom += (cinematicTime+elapsed) * (5/1500);
+                    if(cinematicTime + elapsed <= cinematicDuration) {
+                        newZoom += (cinematicTime+elapsed) * (5/cinematicDuration);
                     } else {
                         newZoom = 10;
                         cinematicTime = 0;
@@ -502,6 +509,7 @@
                     });
                     player.model.modifyView(newView);
                     cinematicTime+=elapsed;
+                    background.distorsion+=0.003;
                 }
 
 
@@ -517,6 +525,8 @@
 
         function spawnBoss() {
             let newBoss = new BigBoss(new Plane(baseConfigModels, modelsData.plane.data, modelsData.plane.bufferOpt));
+            newBoss.setSpeedFactor(newBoss.getSpeedFactor() * (88+enemyKilled)/88);
+            newBoss.setHP(newBoss.getHP() * (50+enemyKilled)/50);
             enemies.push(newBoss);
             entities.push(newBoss);
             let newView =  mat4.lookAt( [0,10,0],[0,0,0],[-1,0,0]);
@@ -527,16 +537,19 @@
             player.model.modifyView(newView);
             canSpawnEnemy = false;
             bossCinematic = true;
+            delayBetweenBoss*=(2+enemyKilled/100)-Math.random()*0.5 + Math.random()*0.2;
         }
 
         function spawnEnemies() {
             if(canSpawnEnemy) {
                 if(!id_spawnE) {
-                var timeout_random = (Math.random()*1000 * 8)/enemyLevel;
+                var timeout_random = (Math.random()*1000 * 8)/ (enemyLevel * ((20+enemyKilled)/20)) ;
                 var num_enemies = Math.random() * 2;
                     id_spawnE = setTimeout(() => {
                         for(var i=0;i<num_enemies;i++) {
-                            var newEnemy = new Enemy_1(new Plane(baseConfigModels,modelsData.plane.data, modelsData.plane.bufferOpt))
+                            var newEnemy = new Enemy_1(new Plane(baseConfigModels,modelsData.plane.data, modelsData.plane.bufferOpt));
+                            newEnemy.setSpeedFactor(newEnemy.getSpeedFactor() * (115+enemyKilled)/115);
+                            newEnemy.setHP(newEnemy.getHP() * (100+enemyKilled)/100);
                             enemies.push(newEnemy);
                             entities.push(newEnemy);
                         }
@@ -556,10 +569,40 @@
             enemyKilled++;
             if(e instanceof BigBoss) {
                 unspawnBoss();
+                player.setDamageMultiplier(player.getDamageMultiplier()* 1.01);
+                player.setAttackSpeedMultiplier(player.getAttackSpeedMultiplier()*1.01);
+                player.incrChanceToPopSpike((Math.random()*8)/100);
+
             } else {
-                if(enemyKilled%40===0) {
+                if(enemyKilled>=delayBetweenBoss) {
                     spawnBoss();
-                } 
+                }
+                //---- Heal player ----
+                let randVal = Math.random();
+                if(randVal<0.3) {
+                    player.heal(Math.random()*2);
+                }
+                // ------------------
+                if(randVal<player.getChanceToPopSpike()) {
+                    let enumDir = {
+                        0: {x:0,y:1},
+                        1: {x:1,y:0},
+                        2: {x:0,y:-1},
+                        3: {x:-1,y:0}
+                    }
+                    for(let i=0; i<4; i++) {
+                        let bullet = new Spike(textures.spike);
+                        const { minX, maxX, minY, maxY } = e.model.getBBox();
+                        bullet.setPosition(minX + ((maxX - minX) / 2), minY);
+                        bullet.setDirection(enumDir[i]);
+                        shootSamples.push(bullet);
+                    }
+
+                }
+                player.setDamageMultiplier(player.getDamageMultiplier() + 0.005);
+                player.setAttackSpeedMultiplier(player.getAttackSpeedMultiplier() + 0.02);
+
+ 
             }
         }
         // moteur de jeu
@@ -571,20 +614,15 @@
             /* Manage objects */
             shootSamples = shootSamples.filter(s => s.loaded);
             entities = entities.filter(e => e.isLoaded() && e.isAlive());
-            enemies = enemies.filter(e => e.isAlive());
+            enemies = enemies.filter(e => e.isLoaded() && e.isAlive());
             entities.forEach( (e) => {
                 e.model.setLightValue(lightning);
             })
             enemies.forEach( e => {
-                e.moveNoBC(0,-1);
+                if(!bossCinematic) {
+                    e.moveNoBC(0,-1);
                 shootSamples.forEach( s => {
-                    if(e.model.isCollidingWith2D(s.position, s.width, s.height)) {
-                        /*console.group("Collision")
-                        console.log("--Hit--");
-                        console.log(e);
-                        console.log("--By--");
-                        console.log(s);
-                        console.groupEnd();*/
+                    if(player && e.model.isCollidingWith2D(s.position, s.width, s.height)) {
                         e.takeDamage(player.getDamageMultiplier() * s.getDamage());
                         let hit = new Hit(textures.vfx.hit);
                         hit.setPosition(...Object.values(s.position));
@@ -592,20 +630,47 @@
                         if(e.isDead()) {
                             destroyEnemy(e);
                         }
+                        let randVal = Math.random();
                         s.clear();
                     }
                 });
-                if(e.model.isCollidingWithBB(player.model.getBBox())) {
-                    player.takeDamage(10);
+                if(player && e.model.isCollidingWithBB(player.model.getBBox())) {
+                    if(e instanceof BigBoss) {
+                        player.takeDamage(100);
+                    } else {
+                        player.takeDamage(10);
+                    }
                     e.takeDamage(100);
                     if(e.isDead()) {
                         destroyEnemy(e);
                     }
                 }
+            }
+
             });
+            // move player if out of the screen while reseting the boss cinematic
+            if(resetBossCinematic && player && player.model.getBBox().maxY < -1) {
+                player.move(0,1);
+            }
+            if(resetBossCinematic && player && player.model.getBBox().minY > 1) {
+                player.move(0,-1);
+            }
+            if(resetBossCinematic && player && player.model.getBBox().minX < -1) {
+                player.move(1,0);
+            }
+            if(resetBossCinematic && player && player.model.getBBox().maxX > 1) {
+                player.move(-1,0);
+            }
 
             //console.log(player.model.getBBox());
             updateHUD()
+
+            if(player && player.isDead()) {
+                player = null;
+                console.log("You're dead !");
+                $(".banner#deathBanner").css("display","block").addClass("deathAnimation");   
+                pause = true;
+            }
             lightning += 0.01;
         }
 
@@ -629,6 +694,7 @@
             canvas.height = window.innerHeight*.95;
             width = canvas.width;
             height = canvas.height;
+
             initGL(canvas);
 
             fbo = new FBO(canvas.width, canvas.height, 1, false);
@@ -651,6 +717,7 @@
             })
             textures.splatTex = initTexture('textures/airplane.png');
             textures.machineGunText = initTexture('textures/clash2.png');
+            textures.spike = initTexture('textures/spike.png');
             textures.vfx = {};
             textures.vfx.explosion = [];
             for(let i=1;i<13;++i) {
@@ -705,9 +772,26 @@
             }
         }
         function updateHUD() {
+            let canvas = document.getElementById("SpaceShip");
+            let bossBanner = $("#bossBanner");
+            $(".banner").each( function() {
+                if($(this).width() !== canvas.width) {
+                    $(this).width(canvas.width);
+                }
+            });
+
+            if(bossCinematic && !$(bossBanner).hasClass("bannerAnimation")) {
+                $(bossBanner).addClass("bannerAnimation");                
+            } else if(!bossCinematic && $(bossBanner).hasClass("bannerAnimation")) {
+                $(bossBanner).removeClass("bannerAnimation");
+            }
             if(player) {
                 document.getElementById("life").style.backgroundImage = `linear-gradient(to right, rgb(0, 168, 36) ${player.getHP()}%, rgb(214, 55, 55) 0%)`;
                 document.getElementById("score").innerHTML = enemyKilled;
+                document.getElementById("atkspeed").innerHTML = player.getAttackSpeedMultiplier().toFixed(1);
+                document.getElementById("dmgmult").innerHTML = player.getDamageMultiplier().toFixed(1);
+                document.getElementById("spike").innerHTML = (player.getChanceToPopSpike()*100).toFixed(1) + '%';
+
             }
         }
 
@@ -732,9 +816,7 @@
             document.getElementById('restartButton').blur();
             document.getElementById('SpaceShip').focus();
             if (r == true) {
-                cancelAnimationFrame(ID_request);
-                getUserValues();
-                webGLStart();
+                location.reload();
             }
         }
 
@@ -761,6 +843,8 @@
 
 <body onload="">
     <canvas id="SpaceShip" style="border: none; float: left;" width="800" height="800"></canvas>
+    <div class="banner" id="deathBanner">You are dead.</div>
+    <div class="banner" id="bossBanner">Boss appeared !</div>
     <div style="float: left; width: 25%">
         <fieldset>
             <legend>Menu</legend>
@@ -796,6 +880,11 @@
         <hr>
         <p>Your life</p>
         <div id="life"></div>
+        <div id="stats">
+            <p>Atk speed : <span id="atkspeed">1</span></p>
+            <p>Dmg multiplier : <span id="dmgmult">1</span></p>
+            <p>Spike chance: <span id="spike">5%</span></p>
+        </div>
         <hr>
         <p>Score : <span id="score">0</span></p>
     </div>

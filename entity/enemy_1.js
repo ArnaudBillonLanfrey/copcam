@@ -6,7 +6,7 @@ class Enemy_1 extends BaseEntity {
         this.model.modifyScale([.5,.5,.5]);
         this.model.rotateY(Math.PI);
         this.model.position2D.y = 2.5;
-        this.model.position2D.x = Math.random() * 2 - Math.random() * 2;
+        this.model.position2D.x = Math.random() * 1.7 - Math.random() * 1.7;
         this.hp = 25;
     }
 
