@@ -763,13 +763,6 @@
                     enemyLevel = radiosEnemy[i].value;
                 }
             }
-
-            var radiosShot = document.getElementsByName('shot');
-            for(var i = 0; i < radiosShot.length; i++){
-                if(radiosShot[i].checked){
-                    shotLevel = radiosShot[i].value;
-                }
-            }
         }
         function updateHUD() {
             let canvas = document.getElementById("SpaceShip");
@@ -848,7 +841,7 @@
     <div style="float: left; width: 25%">
         <fieldset>
             <legend>Menu</legend>
-            <p>Select enemies level :</p>
+            <p>Select difficulty :</p>
             <div class="btn-group btn-group-toggle" data-toggle="buttons">
                 <label class="btn btn-outline-success active">
                     <input type="radio" id="easyEnemy" name="enemy" value="1"  checked> Easy
@@ -858,18 +851,6 @@
                 </label>
                 <label class="btn btn-outline-danger">
                     <input type="radio" id="hardEnemy" name="enemy" value="3"> Hard
-                </label>
-            </div>
-            <p>Select shots level :</p>
-            <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                <label class="btn btn-outline-success active">
-                    <input type="radio" id="easyShot" name="shot" value="1"  checked> Easy
-                </label>
-                <label class="btn btn-outline-warning">
-                    <input type="radio" id="mediumShot" name="shot" value="2"> Medium
-                </label>
-                <label class="btn btn-outline-danger">
-                    <input type="radio" id="hardShot" name="shot" value="3"> Hard
                 </label>
             </div>
             <hr>
