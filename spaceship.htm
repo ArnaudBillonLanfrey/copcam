@@ -152,6 +152,7 @@
         void main(void) {
             vec2 original = vTextureCoord;
             newText = vTextureCoord;
+            // distorsion
             newText.x -= sin(vTextureCoord.y*10.0)*uMultiplier * (0.5 - abs(vTextureCoord.x-0.5));
             newText.y -= sin(original.x*10.0)*uMultiplier * (0.5 - abs(vTextureCoord.y - 0.5));
             float d = texture(uHeightfield,newText).x;
